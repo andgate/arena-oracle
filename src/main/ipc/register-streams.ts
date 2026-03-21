@@ -16,20 +16,15 @@ function bridgeStream<T>(
   let rendererSub: Subscription | null = null
 
   ipcMain.on(`${channel}:subscribe`, () => {
-    console.log(`[bridge] renderer subscribed to ${channel}`)
     // Renderer is subscribing — drain the replay buffer then go live
     rendererSub = replay$.subscribe({
-      next: (v) => {
-        console.log(`[bridge] sending ${channel}:next`)
-        win.webContents.send(`${channel}:next`, v)
-      },
+      next: (v) => win.webContents.send(`${channel}:next`, v),
       error: (e) =>
         win.webContents.send(`${channel}:error`, {
           message: (e as Error).message,
         }),
       complete: () => win.webContents.send(`${channel}:complete`),
     })
-    console.log(`[bridge] replay drained for ${channel}`)
   })
 
   ipcMain.on(`${channel}:unsubscribe`, () => {

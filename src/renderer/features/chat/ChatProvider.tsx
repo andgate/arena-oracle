@@ -181,8 +181,6 @@ async function callFree(messages: ChatMessage[]): Promise<string> {
     content: m.content,
   }))
 
-  console.log(apiMessages)
-
   const response = await fetch(CHAT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -254,8 +252,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   ])
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState<ChatModel>("groq")
-
-  console.log(GROQ_API_KEY)
 
   // Use a ref so the snapshot handler always sees the latest messages
   // without needing to be re-registered

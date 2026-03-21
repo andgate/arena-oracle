@@ -12,7 +12,6 @@ export function PlayerLogViewer() {
   // Watch for and collect new log chunks
   useEffect(() => {
     const sub = playerLog$.subscribe((chunk) => {
-      console.log("renderer recieved chunk")
       if (!chunk) return
       setPlayerLog((prev) => prev + chunk)
     })

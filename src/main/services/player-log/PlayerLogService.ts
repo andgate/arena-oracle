@@ -42,7 +42,6 @@ export class PlayerLogService implements IPlayerLogService, IStartable, IStoppab
       })
       stream.on("data", (chunk) => {
         this.chunkCount += 1
-        console.log("initial chunk emitted", this.chunkCount)
         this.log$.next(chunk as string)
       })
       stream.on("end", () => {
@@ -66,7 +65,6 @@ export class PlayerLogService implements IPlayerLogService, IStartable, IStoppab
 
       stream.on("data", (chunk) => {
         this.chunkCount += 1
-        console.log("chunk emitted", this.chunkCount)
         this.log$.next(chunk as string)
       })
       stream.on("end", () => {
