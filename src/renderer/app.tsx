@@ -1,12 +1,12 @@
-import { createRoot } from "react-dom/client"
 import { useState } from "react"
-import "./styles.css"
-import { PlayerLogViewer } from "./features/PlayerLogViewer"
-import { GameStateViewer } from "./features/GameStateViewer"
+import { createRoot } from "react-dom/client"
 import { CardDbViewer } from "./features/CardDbViewer"
 import { CoachingViewer } from "./features/CoachingViewer"
+import { GameStateViewer } from "./features/GameStateViewer"
 import { ChatProvider } from "./features/chat/ChatProvider"
 import { ChatViewer } from "./features/chat/ChatViewer"
+import { PlayerLogViewer } from "./features/player-log/PlayerLogViewer"
+import "./styles.css"
 
 const TABS = ["Raw Log", "Game State", "Card DB", "Coaching", "Chat"] as const
 type Tab = (typeof TABS)[number]

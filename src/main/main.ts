@@ -21,6 +21,7 @@ const createWindow = (): BrowserWindow => {
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
@@ -35,8 +36,11 @@ const createWindow = (): BrowserWindow => {
     )
   }
 
-  // Open DevTools
-  mainWindow.webContents.openDevTools()
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.show()
+    // Open DevTools
+    mainWindow.webContents.openDevTools()
+  })
 
   return mainWindow
 }
