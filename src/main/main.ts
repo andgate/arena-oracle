@@ -1,11 +1,12 @@
+import "reflect-metadata"
 import { app, BrowserWindow } from "electron"
 import path from "node:path"
 import started from "electron-squirrel-startup"
-import { registerPlayerLogIPC } from "./ipc/player-log-ipc"
 import { registerGameStateIPC } from "./ipc/game-state-ipc"
 import { registerCardDbIPC } from "./ipc/card-db-ipc"
 import { registerCoachingSnapshotIPC } from "./ipc/coaching-snapshot-ipc"
 import { startPipeline } from "./service-orchestrator"
+import { registerStreams } from "./ipc/register-streams"
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string
 declare const MAIN_WINDOW_VITE_NAME: string
@@ -49,8 +50,10 @@ app.on("ready", () => {
   // Start the pipeline
   startPipeline()
 
+  // Register IPC streams
+  registerStreams(win)
+
   // Register our IPC services
-  registerPlayerLogIPC(win)
   registerGameStateIPC(win)
   registerCardDbIPC()
   registerCoachingSnapshotIPC(win)

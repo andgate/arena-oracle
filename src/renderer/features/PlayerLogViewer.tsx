@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react"
+import { useObservable } from "../hooks/useObservable"
+import { playerLog$ } from "../streams"
 
-export interface PlayerLogViewerProps {
-  log: string
-}
-
-export function PlayerLogViewer({}: PlayerLogViewerProps) {
+export function PlayerLogViewer() {
+  const chunk = useObservable(playerLog$, "")
   const [playerLog, setPlayerLog] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
   const [autoScroll, setAutoScroll] = useState(true)
@@ -14,18 +13,9 @@ export function PlayerLogViewer({}: PlayerLogViewerProps) {
 
   // Watch for and collect new log chunks
   useEffect(() => {
-    // Fetch everything accumulated so far
-    window.mtgaAPI.playerLog.getLog().then((log) => {
-      setPlayerLog(log)
-    })
-
-    // Then stream new chunks as they arrive
-    window.mtgaAPI.playerLog.onChunk((chunk: string) => {
-      setPlayerLog((prev) => prev + chunk)
-    })
-
-    return () => window.mtgaAPI.playerLog.removeListeners()
-  }, [])
+    if (!chunk) return
+    setPlayerLog((prev) => prev + chunk)
+  }, [chunk])
 
   // Handle auto scroll
   useEffect(() => {

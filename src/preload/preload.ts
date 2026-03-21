@@ -1,20 +1,12 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { CoachingSnapshot } from "@shared/coaching-types"
-import { MTGAElectronAPI } from "@shared/electron-types"
+import { IpcChannels, MTGAElectronAPI } from "@shared/electron-types"
 import { GameState } from "@shared/game-state-types"
 import { contextBridge, ipcRenderer } from "electron"
 
+// Setup MTGA API
 const mtgaAPI: MTGAElectronAPI = {
-  playerLog: {
-    getLog: () => ipcRenderer.invoke("playerLog:getLog"),
-    onChunk: (callback) => {
-      ipcRenderer.on("playerLog:chunk", (_event, chunk) => callback(chunk))
-    },
-    removeListeners: () => {
-      ipcRenderer.removeAllListeners("playerLog:chunk")
-    },
-  },
   gameState: {
     get: () => ipcRenderer.invoke("gameState:get"),
     onStateUpdated: (callback) => {
@@ -52,4 +44,21 @@ const mtgaAPI: MTGAElectronAPI = {
   },
 }
 
+// Setup IPC channels for renderer
+const channels: IpcChannels = {
+  send: (channel: string, ...args: unknown[]) =>
+    ipcRenderer.send(channel, ...args),
+
+  on: (channel: string, cb: (...args: unknown[]) => void) =>
+    ipcRenderer.on(channel, (_event, ...args) => cb(...args)),
+
+  once: (channel: string, cb: (...args: unknown[]) => void) =>
+    ipcRenderer.once(channel, (_event, ...args) => cb(...args)),
+
+  remove: (channel: string, cb: (...args: unknown[]) => void) =>
+    ipcRenderer.removeListener(channel, cb),
+}
+
+// Expose mtgaAPI and channels to renderer
 contextBridge.exposeInMainWorld("mtgaAPI", mtgaAPI)
+contextBridge.exposeInMainWorld("channels", channels)

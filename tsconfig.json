@@ -22,7 +22,10 @@
       "@shared/*": [
         "src/shared/*"
       ]
-    }
+    },
+    // Required by tsyringe
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
     "src/**/*",

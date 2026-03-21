@@ -69,7 +69,7 @@ function App() {
         {/* Tab content */}
         <div style={{ flex: 1, minHeight: 0 }}>
           {activeTab === "Chat" && <ChatViewer />}
-          {activeTab === "Raw Log" && <PlayerLogViewer log="" />}
+          {activeTab === "Raw Log" && <PlayerLogViewer />}
           {activeTab === "Game State" && <GameStateViewer />}
           {activeTab === "Card DB" && <CardDbViewer />}
           {activeTab === "Coaching" && <CoachingViewer />}

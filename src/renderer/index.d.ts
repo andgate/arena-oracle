@@ -1,7 +1,8 @@
-import type { MTGAElectronAPI } from "../shared/electron-types"
+import type { IpcChannels, MTGAElectronAPI } from "../shared/electron-types"
 
 declare global {
   interface Window {
     mtgaAPI: MTGAElectronAPI
+    channels: IpcChannels
   }
 }
