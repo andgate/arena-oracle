@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { useObservable } from "../hooks/useObservable"
 import { playerLog$ } from "../streams"
 
 export function PlayerLogViewer() {
-  const chunk = useObservable(playerLog$, "")
   const [playerLog, setPlayerLog] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
   const [autoScroll, setAutoScroll] = useState(true)
@@ -13,9 +11,13 @@ export function PlayerLogViewer() {
 
   // Watch for and collect new log chunks
   useEffect(() => {
-    if (!chunk) return
-    setPlayerLog((prev) => prev + chunk)
-  }, [chunk])
+    const sub = playerLog$.subscribe((chunk) => {
+      console.log("renderer recieved chunk")
+      if (!chunk) return
+      setPlayerLog((prev) => prev + chunk)
+    })
+    return () => sub.unsubscribe()
+  }, [])
 
   // Handle auto scroll
   useEffect(() => {

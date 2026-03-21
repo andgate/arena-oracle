@@ -111,6 +111,7 @@ import * as fs from "fs"
 import { injectable } from "tsyringe"
 import { IFileSystem } from "./IFileSystem"
 
+@singleton()
 @injectable()
 export class RealFileSystem implements IFileSystem {
   readFileSync(path: string, encoding: BufferEncoding): string {
@@ -150,7 +151,7 @@ The most important architectural decision in this system is the explicit lifecyc
 
 ```typescript
 // src/main/IStartable.ts
-export const IStartable = "IStartable"
+export const IStartable = Symbol("IStartable")
 
 export interface IStartable {
   start(): void
@@ -354,7 +355,7 @@ import { LogParserService } from "./services/LogParserService"
 import { IStartable } from "./IStartable"
 
 // Bind interfaces to implementations
-container.register(IFileSystem, { useClass: RealFileSystem })
+container.register(IFileSystem, { useToken: RealFileSystem })
 container.register(ILogWatcherService, { useToken: LogWatcherService })
 container.register(ILogParserService, { useToken: LogParserService })
 
@@ -538,22 +539,6 @@ export function fromIpcChannel<T>(channel: string): Observable<T> {
     }
   })
 }
-
-export function useObservable<T>(obs$: Observable<T>, initial: T): T {
-  const [value, setValue] = useState<T>(initial)
-
-  useEffect(() => {
-    const sub = obs$.subscribe(setValue)
-    return () => sub.unsubscribe()
-  }, [obs$])
-
-  return value
-}
-
-export function useIpcChannel<T>(channel: string, initial: T): T {
-  const obs$ = useMemo(() => fromIpcChannel<T>(channel), [channel])
-  return useObservable(obs$, initial)
-}
 ```
 
 ---
@@ -589,18 +574,19 @@ export const systemState$ = fromIpcChannel<SystemState>("system-state").pipe(
 ```typescript
 // src/renderer/components/LogViewer.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { useObservable } from '../hooks';
 import { log$ } from '../streams';
 
 export function LogViewer(): React.JSX.Element {
   const [lines, setLines] = useState<string[]>([]);
-  const chunk = useObservable(log$, '');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!chunk) return;
-    setLines((prev) => [...prev, ...chunk.split('\n').filter(Boolean)]);
-  }, [chunk]);
+    const sub = log$.subscribe((chunk) => {
+      if (!chunk) return;
+      setLines((prev) => [...prev, ...chunk.split('\n').filter(Boolean)]);
+    });
+    return () => sub.unsubscribe();
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -626,22 +612,11 @@ export function LogViewer(): React.JSX.Element {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: { fontFamily: 'monospace', background: '#1e1e1e', height: '100vh', display: 'flex', flexDirection: 'column' },
-  header: { background: '#2d2d2d', color: '#ccc', padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #444' },
-  dot: { width: 8, height: 8, borderRadius: '50%', background: '#4caf50', display: 'inline-block', boxShadow: '0 0 6px #4caf50' },
-  logBox: { flex: 1, overflowY: 'auto', padding: '12px 0', color: '#d4d4d4', fontSize: 13 },
-  line: { display: 'flex', gap: 16, padding: '1px 16px', lineHeight: '1.6' },
-  lineNum: { color: '#555', userSelect: 'none', flexShrink: 0 },
-  empty: { color: '#555', padding: '16px', display: 'block' },
-};
 ```
 
 ```typescript
 // src/renderer/components/AppDashboard.tsx
-import React from 'react';
-import { useObservable } from '../hooks';
+import React, { useEffect, useState } from 'react';
 import { systemState$ } from '../streams';
 import { initialSystemState } from '../../main/services/ILogParserService';
 
@@ -652,7 +627,12 @@ const statusColors: Record<string, string> = {
 };
 
 export function AppDashboard(): React.JSX.Element {
-  const state = useObservable(systemState$, initialSystemState);
+  const [state, setState] = useState(initialSystemState);
+
+  useEffect(() => {
+    const sub = systemState$.subscribe(setState);
+    return () => sub.unsubscribe();
+  }, []);
 
   return (
     <div style={{ padding: 24, fontFamily: 'sans-serif' }}>
@@ -883,51 +863,6 @@ describe("LogParserService", () => {
     emit({ level: "info", message: "Ready", metadata: { version: "2.1.0" } })
   })
 })
-```
-
-### Testing Renderer Hooks
-
-Use `@testing-library/react` and inject a `Subject` directly — no IPC needed.
-
-```typescript
-// src/renderer/hooks.test.tsx
-import React from 'react';
-import { render, screen, act } from '@testing-library/react';
-import { Subject } from 'rxjs';
-import { useObservable } from './hooks';
-
-function TestComponent({ obs$ }: { obs$: Subject<string> }): React.JSX.Element {
-  const value = useObservable(obs$, 'initial');
-  return <div data-testid="value">{value}</div>;
-}
-
-describe('useObservable', () => {
-  it('renders the initial value before any emission', () => {
-    const subject = new Subject<string>();
-    render(<TestComponent obs$={subject} />);
-    expect(screen.getByTestId('value').textContent).toBe('initial');
-  });
-
-  it('updates when the Observable emits', () => {
-    const subject = new Subject<string>();
-    render(<TestComponent obs$={subject} />);
-
-    act(() => subject.next('hello'));
-
-    expect(screen.getByTestId('value').textContent).toBe('hello');
-  });
-
-  it('unsubscribes on unmount', () => {
-    const subject = new Subject<string>();
-    const { unmount } = render(<TestComponent obs$={subject} />);
-
-    unmount();
-
-    // No subscribers remain — next should not throw
-    expect(() => subject.next('after unmount')).not.toThrow();
-    expect(subject.observed).toBe(false);
-  });
-});
 ```
 
 ---

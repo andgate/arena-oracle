@@ -3,16 +3,17 @@ import path from "path"
 import { inject, injectable, singleton } from "tsyringe"
 import { IFileSystem } from "../../utils/fs/IFileSystem"
 import { IPlayerLogService } from "./IPlayerLogService"
-import { IStartable, IStoppable } from "src/main/types/lifecycle"
-import { Subject } from "rxjs"
+import { IStartable, IStoppable } from "src/main/services/lifecycle"
+import { ReplaySubject } from "rxjs"
 
 @injectable()
 @singleton()
 export class PlayerLogService implements IPlayerLogService, IStartable, IStoppable {
-  readonly log$ = new Subject<string>()
+  readonly log$ = new ReplaySubject<string>(100)
 
   private logPath: string = ""
   private fileOffset: number = 0
+  private chunkCount = 0
 
   constructor(@inject(IFileSystem) private fs: IFileSystem) {
     this.logPath = path.resolve(
@@ -29,6 +30,7 @@ export class PlayerLogService implements IPlayerLogService, IStartable, IStoppab
 
     // Set to 0 to read entire existing log, or stat.size to tail only
     this.fileOffset = 0
+    this.chunkCount = 0
 
     // Emit initial file content
     try {
@@ -38,7 +40,11 @@ export class PlayerLogService implements IPlayerLogService, IStartable, IStoppab
         end: stat.size - 1,
         encoding: "utf-8",
       })
-      stream.on("data", (chunk) => this.log$.next(chunk as string))
+      stream.on("data", (chunk) => {
+        this.chunkCount += 1
+        console.log("initial chunk emitted", this.chunkCount)
+        this.log$.next(chunk as string)
+      })
       stream.on("end", () => {
         this.fileOffset = stat.size
       })
@@ -58,7 +64,11 @@ export class PlayerLogService implements IPlayerLogService, IStartable, IStoppab
         encoding: "utf-8",
       })
 
-      stream.on("data", (chunk) => this.log$.next(chunk as string))
+      stream.on("data", (chunk) => {
+        this.chunkCount += 1
+        console.log("chunk emitted", this.chunkCount)
+        this.log$.next(chunk as string)
+      })
       stream.on("end", () => {
         this.fileOffset = curr.size
       })

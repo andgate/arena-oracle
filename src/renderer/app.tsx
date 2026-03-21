@@ -12,7 +12,7 @@ const TABS = ["Raw Log", "Game State", "Card DB", "Coaching", "Chat"] as const
 type Tab = (typeof TABS)[number]
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("Chat")
+  const [activeTab, setActiveTab] = useState<Tab>("Raw Log")
 
   return (
     <ChatProvider>

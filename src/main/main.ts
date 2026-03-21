@@ -1,4 +1,3 @@
-import "reflect-metadata"
 import { app, BrowserWindow } from "electron"
 import path from "node:path"
 import started from "electron-squirrel-startup"
@@ -7,6 +6,8 @@ import { registerCardDbIPC } from "./ipc/card-db-ipc"
 import { registerCoachingSnapshotIPC } from "./ipc/coaching-snapshot-ipc"
 import { startPipeline } from "./service-orchestrator"
 import { registerStreams } from "./ipc/register-streams"
+import { container } from "./services/container"
+import { IStartable } from "./services/lifecycle"
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string
 declare const MAIN_WINDOW_VITE_NAME: string
@@ -57,6 +58,10 @@ app.on("ready", () => {
   registerGameStateIPC(win)
   registerCardDbIPC()
   registerCoachingSnapshotIPC(win)
+
+  // All subscribers (Node services + IPC bridge) are attached
+  // Now it's safe to start I/O
+  container.resolveAll<IStartable>(IStartable).forEach((s) => s.start())
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

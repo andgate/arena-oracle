@@ -1,12 +1,14 @@
-import { useMemo } from "react"
-import { useObservable } from "./useObservable"
 import { Observable } from "rxjs"
 
 export function fromIpcChannel<T>(channel: string): Observable<T> {
   return new Observable<T>((subscriber) => {
+    console.log(`[ipc] subscribing to ${channel}`)
     window.channels.send(`${channel}:subscribe`)
 
-    const onNext = (value: T) => subscriber.next(value)
+    const onNext = (value: T) => {
+      console.log(`[ipc] received ${channel}:next`)
+      subscriber.next(value)
+    }
     const onError = (err: { message: string }) =>
       subscriber.error(new Error(err.message))
     const onComplete = () => subscriber.complete()
@@ -22,9 +24,4 @@ export function fromIpcChannel<T>(channel: string): Observable<T> {
       window.channels.remove(`${channel}:complete`, onComplete)
     }
   })
-}
-
-export function useIpcChannel<T>(channel: string, initial: T): T {
-  const obs$ = useMemo(() => fromIpcChannel<T>(channel), [channel])
-  return useObservable(obs$, initial)
 }

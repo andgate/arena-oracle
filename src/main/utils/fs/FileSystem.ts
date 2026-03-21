@@ -1,7 +1,8 @@
 import * as fs from "fs"
-import { injectable } from "tsyringe"
+import { injectable, singleton } from "tsyringe"
 import { IFileSystem } from "./IFileSystem"
 
+@singleton()
 @injectable()
 export class FileSystem implements IFileSystem {
   readFileSync(path: string, encoding: BufferEncoding): string {
