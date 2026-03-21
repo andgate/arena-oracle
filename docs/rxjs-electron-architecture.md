@@ -477,22 +477,44 @@ app.whenReady().then(() => {
 
 ## Preload Script
 
+> [!WARNING]
+> **The ContextBridge Listener Leak**
+> Exposing IPC directly through `contextBridge` introduces a subtle memory leak when unsubscribing. Functions created in the renderer and passed to the main world via `contextBridge` are stripped by Electron and wrapped in an anonymous native function (e.g., `(_event, ...args) => cb(...args)`). If your `.removeListener` method receives the *original* generic `cb` from the renderer, it will fail to remove the native wrapper. You must maintain a `WeakMap` inside the preload script to map the renderer callback to its native wrapper format so it can be successfully deregistered.
+
 ```typescript
 // src/preload.ts
 import { contextBridge, ipcRenderer } from "electron"
+
+const listenerMap = new WeakMap<
+  (...args: any[]) => void,
+  (_event: Electron.IpcRendererEvent, ...args: any[]) => void
+>()
 
 contextBridge.exposeInMainWorld("ipcBridge", {
   send: (channel: string, ...args: unknown[]) =>
     ipcRenderer.send(channel, ...args),
 
-  on: (channel: string, cb: (...args: unknown[]) => void) =>
-    ipcRenderer.on(channel, (_event, ...args) => cb(...args)),
+  on: (channel: string, cb: (...args: unknown[]) => void) => {
+    const wrapper = (_event: Electron.IpcRendererEvent, ...args: unknown[]) =>
+      cb(...args)
+    listenerMap.set(cb, wrapper)
+    ipcRenderer.on(channel, wrapper)
+  },
 
-  once: (channel: string, cb: (...args: unknown[]) => void) =>
-    ipcRenderer.once(channel, (_event, ...args) => cb(...args)),
+  once: (channel: string, cb: (...args: unknown[]) => void) => {
+    const wrapper = (_event: Electron.IpcRendererEvent, ...args: unknown[]) =>
+      cb(...args)
+    listenerMap.set(cb, wrapper)
+    ipcRenderer.once(channel, wrapper)
+  },
 
-  remove: (channel: string, cb: (...args: unknown[]) => void) =>
-    ipcRenderer.removeListener(channel, cb),
+  remove: (channel: string, cb: (...args: unknown[]) => void) => {
+    const wrapper = listenerMap.get(cb)
+    if (wrapper) {
+      ipcRenderer.removeListener(channel, wrapper)
+      listenerMap.delete(cb)
+    }
+  },
 })
 ```
 

@@ -44,19 +44,38 @@ const mtgaAPI: MTGAElectronAPI = {
   },
 }
 
-// Setup IPC channels for renderer
+// Setup generic IPC channels for renderer. We use a WeakMap to track the 
+// dynamically created wrapper functions so they can be properly removed.
+const listenerMap = new WeakMap<
+  (...args: unknown[]) => void,
+  (_event: Electron.IpcRendererEvent, ...args: unknown[]) => void
+>()
+
 const channels: IpcChannels = {
   send: (channel: string, ...args: unknown[]) =>
     ipcRenderer.send(channel, ...args),
 
-  on: (channel: string, cb: (...args: unknown[]) => void) =>
-    ipcRenderer.on(channel, (_event, ...args) => cb(...args)),
+  on: (channel: string, cb: (...args: unknown[]) => void) => {
+    const wrapper = (_event: Electron.IpcRendererEvent, ...args: unknown[]) =>
+      cb(...args)
+    listenerMap.set(cb, wrapper)
+    ipcRenderer.on(channel, wrapper)
+  },
 
-  once: (channel: string, cb: (...args: unknown[]) => void) =>
-    ipcRenderer.once(channel, (_event, ...args) => cb(...args)),
+  once: (channel: string, cb: (...args: unknown[]) => void) => {
+    const wrapper = (_event: Electron.IpcRendererEvent, ...args: unknown[]) =>
+      cb(...args)
+    listenerMap.set(cb, wrapper)
+    ipcRenderer.once(channel, wrapper)
+  },
 
-  remove: (channel: string, cb: (...args: unknown[]) => void) =>
-    ipcRenderer.removeListener(channel, cb),
+  remove: (channel: string, cb: (...args: unknown[]) => void) => {
+    const wrapper = listenerMap.get(cb)
+    if (wrapper) {
+      ipcRenderer.removeListener(channel, wrapper)
+      listenerMap.delete(cb)
+    }
+  },
 }
 
 // Expose mtgaAPI and channels to renderer
