@@ -1,12 +1,8 @@
-import { closeCardDb, loadCardDb } from "./services/card-db-service"
-import {
-  startGameStateService,
-  stopGameStateService,
-} from "./services/game-state-service"
+import { closeCardDb, loadCardDb } from "./services/card-db/CardDbService"
 import {
   startCoachingSnapshotService,
   stopCoachingSnapshotService,
-} from "./services/coaching-snapshot-service"
+} from "./services/coaching-snapshot/CoachingSnapshotService"
 import { findMtgaRawDataPath } from "./utils/mtga-data-utils"
 
 export async function startPipeline() {
@@ -14,13 +10,11 @@ export async function startPipeline() {
   if (!rawDataPath) throw new Error("Could not find MTGA raw data path")
 
   loadCardDb(rawDataPath) // sync, no deps
-  startGameStateService() // registers on logEventBus
   startCoachingSnapshotService() // registers on gameStateEvents
   // startLlmService(win)                 // registers on coachingEvents, holds win ref
 }
 
 export async function stopPipeline() {
-  stopGameStateService()
   stopCoachingSnapshotService()
   // stopLlmService()
   closeCardDb()

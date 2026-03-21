@@ -1,14 +1,14 @@
 import {
   BattlefieldCard,
   CoachingSnapshot,
+  Decision,
   HandCard,
   StackEntry,
-  Decision,
 } from "@shared/coaching-types"
-import { coachingEvents, gameStateEvents } from "../event-bus"
-import { lookupCard } from "./card-db-service"
 import { GameState, PendingDecision } from "@shared/game-state-types"
 import { TAvailableAction } from "@shared/gre-types"
+import { coachingEvents, gameStateEvents } from "../../event-bus"
+import { lookupCard } from "../card-db/CardDbService"
 
 // ============================================================
 // Coaching Snapshot State

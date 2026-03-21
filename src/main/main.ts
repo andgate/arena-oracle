@@ -1,11 +1,10 @@
 import { app, BrowserWindow } from "electron"
-import path from "node:path"
 import started from "electron-squirrel-startup"
-import { registerGameStateIPC } from "./ipc/game-state-ipc"
+import path from "node:path"
 import { registerCardDbIPC } from "./ipc/card-db-ipc"
 import { registerCoachingSnapshotIPC } from "./ipc/coaching-snapshot-ipc"
-import { startPipeline } from "./service-orchestrator"
 import { registerStreams } from "./ipc/register-streams"
+import { startPipeline } from "./service-orchestrator"
 import { container } from "./services/container"
 import { IStartable } from "./services/lifecycle"
 
@@ -55,7 +54,6 @@ app.on("ready", () => {
   registerStreams(win)
 
   // Register our IPC services
-  registerGameStateIPC(win)
   registerCardDbIPC()
   registerCoachingSnapshotIPC(win)
 

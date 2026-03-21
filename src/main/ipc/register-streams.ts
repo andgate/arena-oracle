@@ -1,13 +1,16 @@
 import { BrowserWindow, ipcMain } from "electron"
 import { Observable, ReplaySubject, Subscription } from "rxjs"
 import { container } from "../services/container"
+import { GameStateService } from "../services/game-state/GameStateService"
+import { IGameStateService } from "../services/game-state/IGameStateService"
+import { IPlayerLogService } from "../services/player-log/IPlayerLogService"
 import { PlayerLogService } from "../services/player-log/PlayerLogService"
 
 function bridgeStream<T>(
   channel: string,
   stream$: Observable<T>,
   win: BrowserWindow,
-  replayBuffer = 100,
+  replayBuffer = 1,
 ): void {
   // Buffer recent emissions for late renderer subscribers
   const replay$ = new ReplaySubject<T>(replayBuffer)
@@ -40,7 +43,17 @@ function bridgeStream<T>(
 }
 
 export function registerStreams(win: BrowserWindow): void {
-  const playerLogService = container.resolve(PlayerLogService)
+  const playerLogService: IPlayerLogService =
+    container.resolve(PlayerLogService)
+  const gameStateService: IGameStateService =
+    container.resolve(GameStateService)
 
   bridgeStream("player-log", playerLogService.log$, win, 100)
+  bridgeStream("game-state:updated", gameStateService.stateUpdated$, win)
+  bridgeStream(
+    "game-state:decision-required",
+    gameStateService.decisionRequired$,
+    win,
+  )
+  bridgeStream("game-state:reset", gameStateService.gameReset$, win)
 }

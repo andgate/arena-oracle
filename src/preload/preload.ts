@@ -44,8 +44,9 @@ const mtgaAPI: MTGAElectronAPI = {
   },
 }
 
-// Setup generic IPC channels for renderer. We use a WeakMap to track the 
-// dynamically created wrapper functions so they can be properly removed.
+// Setup generic, observable IPC channels for renderer.
+// We use a WeakMap to track the dynamically created wrapper functions
+// so they can be properly removed.
 const listenerMap = new WeakMap<
   (...args: unknown[]) => void,
   (_event: Electron.IpcRendererEvent, ...args: unknown[]) => void

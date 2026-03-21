@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from "electron"
 import { coachingEvents } from "../event-bus"
-import { getLatestSnapshot } from "../services/coaching-snapshot-service"
+import { getLatestSnapshot } from "../services/coaching-snapshot/CoachingSnapshotService"
 
 export function registerCoachingSnapshotIPC(win: BrowserWindow) {
   ipcMain.handle("coaching:get", () => getLatestSnapshot())
