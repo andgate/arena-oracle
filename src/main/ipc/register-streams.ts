@@ -1,10 +1,9 @@
 import { BrowserWindow, ipcMain } from "electron"
 import { Observable, ReplaySubject, Subscription } from "rxjs"
+import { ICoachingSnapshotService } from "../services/coaching-snapshot/ICoachingSnapshotService"
 import { container } from "../services/container"
-import { GameStateService } from "../services/game-state/GameStateService"
 import { IGameStateService } from "../services/game-state/IGameStateService"
 import { IPlayerLogService } from "../services/player-log/IPlayerLogService"
-import { PlayerLogService } from "../services/player-log/PlayerLogService"
 
 function bridgeStream<T>(
   channel: string,
@@ -43,10 +42,13 @@ function bridgeStream<T>(
 }
 
 export function registerStreams(win: BrowserWindow): void {
-  const playerLogService: IPlayerLogService =
-    container.resolve(PlayerLogService)
-  const gameStateService: IGameStateService =
-    container.resolve(GameStateService)
+  const playerLogService =
+    container.resolve<IPlayerLogService>(IPlayerLogService)
+  const gameStateService =
+    container.resolve<IGameStateService>(IGameStateService)
+  const coachingSnapshotService = container.resolve<ICoachingSnapshotService>(
+    ICoachingSnapshotService,
+  )
 
   bridgeStream("player-log", playerLogService.log$, win, 100)
   bridgeStream("game-state:updated", gameStateService.stateUpdated$, win)
@@ -56,4 +58,5 @@ export function registerStreams(win: BrowserWindow): void {
     win,
   )
   bridgeStream("game-state:reset", gameStateService.gameReset$, win)
+  bridgeStream("coaching-snapshot", coachingSnapshotService.snapshot$, win)
 }

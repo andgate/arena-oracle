@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react"
 import {
-  CoachingSnapshot,
   BattlefieldCard,
-  HandCard,
+  CoachingSnapshot,
   Decision,
+  HandCard,
 } from "@shared/coaching-types"
+import { useEffect, useState } from "react"
+import { coachingSnapshot$ } from "../streams"
 
 // ============================================================
 // Card views
@@ -273,13 +274,12 @@ export function CoachingViewer() {
   const [updateCount, setUpdateCount] = useState(0)
 
   useEffect(() => {
-    window.mtgaAPI.coaching.get().then(setSnapshot)
-    const unsubscribe = window.mtgaAPI.coaching.onSnapshotReady((s) => {
+    const sub = coachingSnapshot$.subscribe((s) => {
       setSnapshot(s)
       setUpdateCount((c) => c + 1)
     })
 
-    return unsubscribe
+    return () => sub.unsubscribe()
   }, [])
 
   if (!snapshot) {

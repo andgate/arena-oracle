@@ -1,3 +1,4 @@
+import { CoachingSnapshot } from "@shared/coaching-types"
 import { GameState } from "@shared/game-state-types"
 import { scan, shareReplay } from "rxjs"
 import { fromIpcChannel } from "./hooks/useIpcChannel"
@@ -16,3 +17,7 @@ export const playerLog$ = fromIpcChannel<string>("player-log").pipe(
 export const gameState$ = fromIpcChannel<GameState>("game-state:updated").pipe(
   shareReplay({ bufferSize: 1, refCount: true }),
 )
+
+export const coachingSnapshot$ = fromIpcChannel<CoachingSnapshot>(
+  "coaching-snapshot",
+).pipe(shareReplay({ bufferSize: 1, refCount: true }))

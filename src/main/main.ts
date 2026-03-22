@@ -2,9 +2,7 @@ import { app, BrowserWindow } from "electron"
 import started from "electron-squirrel-startup"
 import path from "node:path"
 import { registerCardDbIPC } from "./ipc/card-db-ipc"
-import { registerCoachingSnapshotIPC } from "./ipc/coaching-snapshot-ipc"
 import { registerStreams } from "./ipc/register-streams"
-import { startPipeline } from "./service-orchestrator"
 import { container } from "./services/container"
 import { IStartable } from "./services/lifecycle"
 
@@ -51,15 +49,11 @@ const createWindow = (): BrowserWindow => {
 app.on("ready", () => {
   const win = createWindow()
 
-  // Start the pipeline
-  startPipeline()
-
   // Register IPC streams
   registerStreams(win)
 
-  // Register our IPC services
+  // Register our IPC service APIs
   registerCardDbIPC()
-  registerCoachingSnapshotIPC(win)
 
   // All subscribers (Node services + IPC bridge) are attached
   // Now it's safe to start I/O

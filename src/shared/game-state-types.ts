@@ -1,15 +1,19 @@
 import type {
   TAvailableAction,
-  TGameObject,
-  TPlayerState,
-  TTurnInfo,
-  TZoneState,
+  TDamageAssigner,
   TEligibleAttacker,
   TEligibleBlocker,
+  TGameObject,
+  TManaCost,
+  TPlayerState,
   TTargetSlot,
-  TDamageAssigner,
-  TManaCost, // need to export this from gre-types too — see note below
+  TTurnInfo,
+  TZoneState,
 } from "./gre-types"
+
+// ============================================================
+// Type Definitions
+// ============================================================
 
 export type PendingDecision =
   | {
@@ -52,4 +56,73 @@ export interface GameState {
   pendingDecision: PendingDecision | null
   localPlayerSeatId: number | null
   gameStateId: number
+}
+
+// ============================================================
+// Accessors
+//
+// Important: battlefield/stack/graveyard/exile have no ownerSeatId
+// in the log — ownership must be determined from the game object's
+// controllerSeatId or ownerSeatId, not the zone itself.
+// Only Hand and Library zones have ownerSeatId.
+// ============================================================
+
+export function getLibrarySize(state: GameState, ownerSeatId: number): number {
+  const zone = Object.values(state.zones).find(
+    (z) => z.type === "ZoneType_Library" && z.ownerSeatId === ownerSeatId,
+  )
+  return zone?.objectInstanceIds?.length ?? 0
+}
+
+export function getHandInstanceIds(
+  state: GameState,
+  ownerSeatId: number,
+): number[] {
+  const zone = Object.values(state.zones).find(
+    (z) => z.type === "ZoneType_Hand" && z.ownerSeatId === ownerSeatId,
+  )
+  return zone?.objectInstanceIds ?? []
+}
+
+export function getBattlefieldInstanceIds(
+  state: GameState,
+  controllerSeatId: number,
+): number[] {
+  const zone = Object.values(state.zones).find(
+    (z) => z.type === "ZoneType_Battlefield",
+  )
+  if (!zone) return []
+  return (zone.objectInstanceIds ?? []).filter(
+    (id) => state.gameObjects[id]?.controllerSeatId === controllerSeatId,
+  )
+}
+
+export function getGraveyardInstanceIds(
+  state: GameState,
+  ownerSeatId: number,
+): number[] {
+  const zone = Object.values(state.zones).find(
+    (z) => z.type === "ZoneType_Graveyard" && z.ownerSeatId === ownerSeatId,
+  )
+  return zone?.objectInstanceIds ?? []
+}
+
+export function getExileInstanceIds(
+  state: GameState,
+  ownerSeatId: number,
+): number[] {
+  const zone = Object.values(state.zones).find(
+    (z) => z.type === "ZoneType_Exile" && z.ownerSeatId === ownerSeatId,
+  )
+  return zone?.objectInstanceIds ?? []
+}
+
+export function getRevealedInstanceIds(
+  state: GameState,
+  ownerSeatId: number,
+): number[] {
+  const zone = Object.values(state.zones).find(
+    (z) => z.type === "ZoneType_Revealed" && z.ownerSeatId === ownerSeatId,
+  )
+  return zone?.objectInstanceIds ?? []
 }

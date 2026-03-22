@@ -9,6 +9,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "check": "tsc --noEmit",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest",
     "test:ui": "vitest --ui",

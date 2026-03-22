@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { coachingSnapshot$ } from "@renderer/streams"
 import { CoachingSnapshot } from "@shared/coaching-types"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import SYSTEM_PROMPT from "./coaching-prompt.md"
 
 // ============================================================
@@ -286,7 +287,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // ---- Snapshot listener ----
   useEffect(() => {
-    const unsubscribe = window.mtgaAPI.coaching.onSnapshotReady((snapshot) => {
+    const sub = coachingSnapshot$.subscribe((snapshot) => {
+      if (!snapshot) return
       const snapshotMsg: ChatMessage = {
         id: generateId(),
         role: "snapshot",
@@ -298,7 +300,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       triggerLLM(updated)
     })
 
-    return unsubscribe
+    return () => sub.unsubscribe()
   }, [])
 
   // ---- User message ----

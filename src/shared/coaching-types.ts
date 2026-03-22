@@ -2,6 +2,10 @@
 // Card types
 // ============================================================
 
+import { ResolvedCard } from "./card-types"
+import { GameState } from "./game-state-types"
+import { TGameObject } from "./gre-types"
+
 export interface BattlefieldCard {
   instanceId: number
   name: string
@@ -128,4 +132,76 @@ export interface CoachingSnapshot {
   opponent: PlayerSnapshot
   stack: StackEntry[]
   decision: Decision
+}
+
+// ============================================================
+// Constructors
+// ============================================================
+
+export function makeBattlefieldCard(
+  instanceId: number,
+  obj: TGameObject,
+  card: ResolvedCard,
+): BattlefieldCard {
+  return {
+    instanceId,
+    name: card.name,
+    manaCost: card.manaCost,
+    typeLine: card.typeLine,
+    subtypeLine: card.subtypeLine,
+    power: obj.power?.value?.toString() ?? card.power,
+    toughness: obj.toughness?.value?.toString() ?? card.toughness,
+    abilities: card.abilities.map((a) => a.text),
+    isTapped: obj.isTapped ?? false,
+    hasSummoningSickness: obj.hasSummoningSickness ?? false,
+    isAttacking: obj.attackState === "AttackState_Attacking",
+  }
+}
+
+export function makeHandCard(
+  instanceId: number,
+  card: ResolvedCard,
+  state: GameState,
+): HandCard {
+  // Check if this card appears in availableActions as castable
+  const canCast =
+    state.pendingDecision?.type === "ActionsAvailable" &&
+    state.pendingDecision.actions.some(
+      (a) => a.instanceId === instanceId && a.actionType === "ActionType_Cast",
+    )
+
+  // Check if this card appears in availableActions as playable
+  const canPlay =
+    state.pendingDecision?.type === "ActionsAvailable" &&
+    state.pendingDecision.actions.some(
+      (a) => a.instanceId === instanceId && a.actionType === "ActionType_Play",
+    )
+
+  return {
+    instanceId,
+    name: card.name,
+    manaCost: card.manaCost,
+    typeLine: card.typeLine,
+    subtypeLine: card.subtypeLine,
+    power: card.power,
+    toughness: card.toughness,
+    abilities: card.abilities.map((a) => a.text),
+    canCast,
+    canPlay,
+  }
+}
+
+export function makeStackEntry(
+  instanceId: number,
+  obj: TGameObject,
+  state: GameState,
+  card: ResolvedCard,
+): StackEntry {
+  return {
+    instanceId,
+    name: card.name,
+    manaCost: card.manaCost,
+    typeLine: card.typeLine,
+    controlledByLocalPlayer: obj.controllerSeatId === state.localPlayerSeatId,
+  }
 }

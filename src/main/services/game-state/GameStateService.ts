@@ -47,6 +47,7 @@ export class GameStateService implements IGameStateService, IStoppable {
 
   stop() {
     this.unsubPlayerLog?.unsubscribe()
+    this.unsubPlayerLog = null
   }
 
   // ============================================================
