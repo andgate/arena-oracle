@@ -13,7 +13,8 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:ci": "vitest --run --coverage"
   },
   "keywords": [],
   "author": {
