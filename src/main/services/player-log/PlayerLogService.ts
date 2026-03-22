@@ -1,14 +1,16 @@
 import { app } from "electron"
 import path from "path"
-import { inject, injectable, singleton } from "tsyringe"
-import { IFileSystem } from "../../utils/fs/IFileSystem"
-import { IPlayerLogService } from "./IPlayerLogService"
-import { IStartable, IStoppable } from "src/main/services/lifecycle"
 import { ReplaySubject } from "rxjs"
+import { IStartable, IStoppable } from "src/main/services/lifecycle"
+import { inject, injectable, singleton } from "tsyringe"
+import { IFileSystem } from "../../utils/fs/FileSystem.interface"
+import { IPlayerLogService } from "./PlayerLogService.interface"
 
 @injectable()
 @singleton()
-export class PlayerLogService implements IPlayerLogService, IStartable, IStoppable {
+export class PlayerLogService
+  implements IPlayerLogService, IStartable, IStoppable
+{
   readonly log$ = new ReplaySubject<string>(100)
 
   private logPath: string = ""

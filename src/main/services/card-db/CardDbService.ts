@@ -4,7 +4,7 @@ import fs from "fs"
 import path from "path"
 import { injectable, singleton } from "tsyringe"
 import { IStartable, IStoppable } from "../lifecycle"
-import { ICardDbService } from "./ICardDbService"
+import { ICardDbService } from "./CardDbService.interface"
 import { findMtgaRawDataPath } from "./mtga-data-utils"
 
 // ============================================================

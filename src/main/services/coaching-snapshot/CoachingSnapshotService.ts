@@ -21,10 +21,10 @@ import {
 import { TAvailableAction } from "@shared/gre-types"
 import { BehaviorSubject, Subscription } from "rxjs"
 import { inject, injectable, singleton } from "tsyringe"
-import { ICardDbService } from "../card-db/ICardDbService"
-import { IGameStateService } from "../game-state/IGameStateService"
+import { ICardDbService } from "../card-db/CardDbService.interface"
+import { IGameStateService } from "../game-state/GameStateService.interface"
 import { IStoppable } from "../lifecycle"
-import { ICoachingSnapshotService } from "./ICoachingSnapshotService"
+import { ICoachingSnapshotService } from "./CoachingSnapshotService.interface"
 
 // ============================================================
 // Coaching Snapshot State

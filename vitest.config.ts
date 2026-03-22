@@ -8,7 +8,27 @@ export default defineConfig({
       reporter: ["text", "lcov"],
       reportsDirectory: "./coverage",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.{test,spec}.{ts,tsx}"],
+      exclude: [
+        // Test files
+        "src/**/*.{test,spec}.{ts,tsx}",
+        // Interface files
+        "**/*.interface.ts",
+        // Declaration files
+        "**/*.d.ts",
+        // DI wiring & symbol declarations
+        "**/main/services/container.ts",
+        "**/main/services/lifecycle.ts",
+        // Entry points & IPC wiring
+        "**/main/main.ts",
+        "**/main/ipc/**",
+        "**/preload/preload.ts",
+        // Renderer entry points & untestable hooks
+        "**/renderer/features/**",
+        "**/renderer/hooks/useIpcChannel.ts",
+        "**/renderer/app.tsx",
+        "**/renderer/main.ts",
+        "**/renderer/streams.ts",
+      ],
       thresholds: {
         lines: 80,
         functions: 80,

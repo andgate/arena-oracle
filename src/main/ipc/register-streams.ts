@@ -1,9 +1,9 @@
 import { BrowserWindow, ipcMain } from "electron"
 import { Observable, ReplaySubject, Subscription } from "rxjs"
-import { ICoachingSnapshotService } from "../services/coaching-snapshot/ICoachingSnapshotService"
+import { ICoachingSnapshotService } from "../services/coaching-snapshot/CoachingSnapshotService.interface"
 import { container } from "../services/container"
-import { IGameStateService } from "../services/game-state/IGameStateService"
-import { IPlayerLogService } from "../services/player-log/IPlayerLogService"
+import { IGameStateService } from "../services/game-state/GameStateService.interface"
+import { IPlayerLogService } from "../services/player-log/PlayerLogService.interface"
 
 function bridgeStream<T>(
   channel: string,

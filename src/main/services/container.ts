@@ -1,16 +1,16 @@
 import "reflect-metadata"
 import { container } from "tsyringe"
 import { FileSystem } from "../utils/fs/FileSystem"
-import { IFileSystem } from "../utils/fs/IFileSystem"
+import { IFileSystem } from "../utils/fs/FileSystem.interface"
 import { CardDbService } from "./card-db/CardDbService"
-import { ICardDbService } from "./card-db/ICardDbService"
+import { ICardDbService } from "./card-db/CardDbService.interface"
 import { CoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotService"
-import { ICoachingSnapshotService } from "./coaching-snapshot/ICoachingSnapshotService"
+import { ICoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotService.interface"
 import { GameStateService } from "./game-state/GameStateService"
-import { IGameStateService } from "./game-state/IGameStateService"
+import { IGameStateService } from "./game-state/GameStateService.interface"
 import { IStartable, IStoppable } from "./lifecycle"
-import { IPlayerLogService } from "./player-log/IPlayerLogService"
 import { PlayerLogService } from "./player-log/PlayerLogService"
+import { IPlayerLogService } from "./player-log/PlayerLogService.interface"
 
 // Bind interfaces to service implementations
 container.register(IFileSystem, { useToken: FileSystem })
