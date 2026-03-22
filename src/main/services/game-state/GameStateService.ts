@@ -4,8 +4,8 @@ import { parseLogLine } from "@shared/gre-types"
 import { BehaviorSubject, Subject, Subscription } from "rxjs"
 import { inject, injectable, singleton } from "tsyringe"
 import { IStoppable } from "../lifecycle"
-import { IPlayerLogService } from "../player-log/IPlayerLogService"
-import { IGameStateService } from "./IGameStateService"
+import { IPlayerLogService } from "../player-log/PlayerLogService.interface"
+import { IGameStateService } from "./GameStateService.interface"
 // ============================================================
 // Game State
 // ============================================================

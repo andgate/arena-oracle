@@ -1,5 +1,5 @@
 import { ipcMain } from "electron"
-import { ICardDbService } from "../services/card-db/ICardDbService"
+import { ICardDbService } from "../services/card-db/CardDbService.interface"
 import { container } from "../services/container"
 
 export function registerCardDbIPC() {

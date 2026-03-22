@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import { injectable, singleton } from "tsyringe"
-import { IFileSystem } from "./IFileSystem"
+import { IFileSystem } from "./FileSystem.interface"
 
 @injectable()
 @singleton()
