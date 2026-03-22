@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { coachingSnapshot$ } from "@renderer/streams"
 import { CoachingSnapshot } from "@shared/coaching-types"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import SYSTEM_PROMPT from "./coaching-prompt.md"
 
 // ============================================================
@@ -181,8 +182,6 @@ async function callFree(messages: ChatMessage[]): Promise<string> {
     content: m.content,
   }))
 
-  console.log(apiMessages)
-
   const response = await fetch(CHAT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -255,8 +254,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState<ChatModel>("groq")
 
-  console.log(GROQ_API_KEY)
-
   // Use a ref so the snapshot handler always sees the latest messages
   // without needing to be re-registered
   const messagesRef = useRef(messages)
@@ -290,7 +287,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // ---- Snapshot listener ----
   useEffect(() => {
-    const unsubscribe = window.mtgaAPI.coaching.onSnapshotReady((snapshot) => {
+    const sub = coachingSnapshot$.subscribe((snapshot) => {
+      if (!snapshot) return
       const snapshotMsg: ChatMessage = {
         id: generateId(),
         role: "snapshot",
@@ -302,7 +300,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       triggerLLM(updated)
     })
 
-    return unsubscribe
+    return () => sub.unsubscribe()
   }, [])
 
   // ---- User message ----

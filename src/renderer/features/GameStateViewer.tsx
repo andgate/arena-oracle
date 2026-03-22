@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react"
 import { GameState } from "@shared/game-state-types"
+import { useEffect, useState } from "react"
+import { gameState$ } from "../streams"
 
 export function GameStateViewer() {
   const [state, setState] = useState<GameState | null>(null)
   const [updateCount, setUpdateCount] = useState(0)
 
   useEffect(() => {
-    window.mtgaAPI.gameState.get().then(setState)
-
-    window.mtgaAPI.gameState.onStateUpdated((s) => {
+    const sub = gameState$.subscribe((s) => {
       setState(s)
       setUpdateCount((c) => c + 1)
     })
 
-    return () => window.mtgaAPI.gameState.removeListeners()
+    return () => sub.unsubscribe()
   }, [])
 
   if (!state)

@@ -19,10 +19,16 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@renderer/*": [
+        "src/renderer/*"
+      ],
       "@shared/*": [
         "src/shared/*"
       ]
-    }
+    },
+    // Required by tsyringe
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
     "src/**/*",

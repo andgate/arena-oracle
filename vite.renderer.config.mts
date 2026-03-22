@@ -1,6 +1,6 @@
-import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import path from "path"
+import { defineConfig } from "vite"
 
 const markdownImportPlugin = {
   name: "markdown-as-string",
@@ -21,6 +21,7 @@ export default defineConfig({
   plugins: [react(), markdownImportPlugin],
   resolve: {
     alias: {
+      "@renderer": path.resolve(__dirname, "src/renderer"),
       "@shared": path.resolve(__dirname, "src/shared"),
     },
   },

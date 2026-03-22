@@ -1,11 +1,10 @@
 import { app, BrowserWindow } from "electron"
-import path from "node:path"
 import started from "electron-squirrel-startup"
-import { registerPlayerLogIPC } from "./ipc/player-log-ipc"
-import { registerGameStateIPC } from "./ipc/game-state-ipc"
+import path from "node:path"
 import { registerCardDbIPC } from "./ipc/card-db-ipc"
-import { registerCoachingSnapshotIPC } from "./ipc/coaching-snapshot-ipc"
-import { startPipeline } from "./service-orchestrator"
+import { registerStreams } from "./ipc/register-streams"
+import { container } from "./services/container"
+import { IStartable } from "./services/lifecycle"
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string
 declare const MAIN_WINDOW_VITE_NAME: string
@@ -20,6 +19,7 @@ const createWindow = (): BrowserWindow => {
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
@@ -34,8 +34,11 @@ const createWindow = (): BrowserWindow => {
     )
   }
 
-  // Open DevTools
-  mainWindow.webContents.openDevTools()
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.show()
+    // Open DevTools
+    mainWindow.webContents.openDevTools()
+  })
 
   return mainWindow
 }
@@ -46,14 +49,15 @@ const createWindow = (): BrowserWindow => {
 app.on("ready", () => {
   const win = createWindow()
 
-  // Start the pipeline
-  startPipeline()
+  // Register IPC streams
+  registerStreams(win)
 
-  // Register our IPC services
-  registerPlayerLogIPC(win)
-  registerGameStateIPC(win)
+  // Register our IPC service APIs
   registerCardDbIPC()
-  registerCoachingSnapshotIPC(win)
+
+  // All subscribers (Node services + IPC bridge) are attached
+  // Now it's safe to start I/O
+  container.resolveAll<IStartable>(IStartable).forEach((s) => s.start())
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

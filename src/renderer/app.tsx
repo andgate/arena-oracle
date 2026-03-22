@@ -1,18 +1,18 @@
-import { createRoot } from "react-dom/client"
 import { useState } from "react"
-import "./styles.css"
-import { PlayerLogViewer } from "./features/PlayerLogViewer"
-import { GameStateViewer } from "./features/GameStateViewer"
+import { createRoot } from "react-dom/client"
 import { CardDbViewer } from "./features/CardDbViewer"
 import { CoachingViewer } from "./features/CoachingViewer"
+import { GameStateViewer } from "./features/GameStateViewer"
 import { ChatProvider } from "./features/chat/ChatProvider"
 import { ChatViewer } from "./features/chat/ChatViewer"
+import { PlayerLogViewer } from "./features/player-log/PlayerLogViewer"
+import "./styles.css"
 
 const TABS = ["Raw Log", "Game State", "Card DB", "Coaching", "Chat"] as const
 type Tab = (typeof TABS)[number]
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("Chat")
+  const [activeTab, setActiveTab] = useState<Tab>("Raw Log")
 
   return (
     <ChatProvider>
@@ -69,7 +69,7 @@ function App() {
         {/* Tab content */}
         <div style={{ flex: 1, minHeight: 0 }}>
           {activeTab === "Chat" && <ChatViewer />}
-          {activeTab === "Raw Log" && <PlayerLogViewer log="" />}
+          {activeTab === "Raw Log" && <PlayerLogViewer />}
           {activeTab === "Game State" && <GameStateViewer />}
           {activeTab === "Card DB" && <CardDbViewer />}
           {activeTab === "Coaching" && <CoachingViewer />}

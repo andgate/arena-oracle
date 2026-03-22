@@ -1,10 +1,11 @@
 import { ipcMain } from "electron"
-import { isCardDbLoaded, lookupCard } from "../services/card-db-service"
+import { ICardDbService } from "../services/card-db/ICardDbService"
+import { container } from "../services/container"
 
 export function registerCardDbIPC() {
-  ipcMain.handle("cardDb:isLoaded", () => isCardDbLoaded())
-  ipcMain.handle(
-    "cardDb:lookupCard",
-    (_event, grpId: number) => lookupCard(grpId) ?? null,
+  const cardDb = container.resolve<ICardDbService>(ICardDbService)
+  ipcMain.handle("cardDb:isLoaded", () => cardDb.isLoaded())
+  ipcMain.handle("cardDb:lookupCard", (_event, grpId: number) =>
+    cardDb.lookupCard(grpId),
   )
 }

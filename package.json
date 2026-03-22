@@ -9,6 +9,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "check": "tsc --noEmit",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -33,6 +34,10 @@
     "electron-squirrel-startup": "^1.0.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-scrollable-feed": "^2.0.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "tsyringe": "^4.10.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -61,6 +66,7 @@
     "eslint-plugin-import": "^2.25.0",
     "happy-dom": "^20.0.11",
     "nodemon": "^3.1.11",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^5.0.12",

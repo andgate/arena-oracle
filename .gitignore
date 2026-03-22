@@ -91,3 +91,6 @@ typings/
 # Electron-Forge
 out/
 dist/
+
+# Code bundle for AI
+src.txt
