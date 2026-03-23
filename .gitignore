@@ -94,3 +94,10 @@ dist/
 
 # Code bundle for AI
 src.txt
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
