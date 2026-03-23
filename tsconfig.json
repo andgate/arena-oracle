@@ -27,6 +27,9 @@
       ],
       "@shared/*": [
         "src/shared/*"
+      ],
+      "@tests/*": [
+        "tests/*"
       ]
     },
     // Required by tsyringe
@@ -35,5 +38,6 @@
   },
   "include": [
     "src/**/*",
+    "tests/**/*",
   ]
 }
