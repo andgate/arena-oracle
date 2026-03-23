@@ -254,3 +254,25 @@ describe("parseLogLine — missing optional fields", () => {
     expect(msg.mulliganReq.mulliganCount).toBeUndefined()
   })
 })
+
+// ============================================================
+// Rejection cases
+// ============================================================
+
+describe("parseLogLine — rejection cases", () => {
+  test("returns null and warns for a GRE event that fails Zod validation", () => {
+    const invalid = {
+      transactionId: 999, // z.string() will reject this
+      requestId: 1,
+      timestamp: "2024-01-01T00:00:00.000Z",
+      greToClientEvent: {
+        greToClientMessages: [
+          { type: "GREMessageType_GameStateMessage" }, // at least one message
+          { noTypeField: true }, // covers the ?? "unknown" fallback
+        ],
+      },
+    }
+    const result = parseLogLine("prefix " + JSON.stringify(invalid))
+    expect(result).toBeNull()
+  })
+})
