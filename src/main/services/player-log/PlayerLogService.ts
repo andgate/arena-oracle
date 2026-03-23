@@ -1,5 +1,4 @@
-import { app } from "electron"
-import path from "path"
+import { getMtgaPlayerLogPath } from "@main/utils/mtga-paths"
 import { ReplaySubject } from "rxjs"
 import { IStartable, IStoppable } from "src/main/services/lifecycle"
 import { inject, injectable, singleton } from "tsyringe"
@@ -18,10 +17,7 @@ export class PlayerLogService
   private chunkCount = 0
 
   constructor(@inject(IFileSystem) private fs: IFileSystem) {
-    this.logPath = path.resolve(
-      app.getPath("appData"),
-      "..\\LocalLow\\Wizards Of The Coast\\MTGA\\Player.log",
-    )
+    this.logPath = getMtgaPlayerLogPath()
   }
 
   start() {

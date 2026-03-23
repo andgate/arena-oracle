@@ -1,3 +1,4 @@
+import { getMtgaRawDataPath } from "@main/utils/mtga-paths"
 import { AbilityText, ResolvedCard } from "@shared/card-types"
 import Database from "better-sqlite3"
 import fs from "fs"
@@ -5,7 +6,6 @@ import path from "path"
 import { injectable, singleton } from "tsyringe"
 import { IStartable, IStoppable } from "../lifecycle"
 import { ICardDbService } from "./CardDbService.interface"
-import { findMtgaRawDataPath } from "./mtga-data-utils"
 
 // ============================================================
 // Hardcoded enum mappings (Enums table LocId join doesn't work)
@@ -59,7 +59,7 @@ export class CardDbService implements ICardDbService, IStartable, IStoppable {
   // ============================================================
 
   start() {
-    const cardDbPath = findMtgaRawDataPath()
+    const cardDbPath = getMtgaRawDataPath()
     if (!cardDbPath) {
       console.error("Could not find path for Raw_CardDatabase_*.mtga")
       return
