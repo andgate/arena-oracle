@@ -44,21 +44,51 @@ export default defineConfig({
           include: [
             "src/main/**/*.{test,spec}.{js,ts}",
             "src/shared/**/*.{test,spec}.{js,ts}",
+            "tests/main/**/*.{test,spec}.{js,ts}",
           ],
+        },
+        resolve: {
+          alias: {
+            "@shared": path.resolve(__dirname, "./src/shared"),
+            "@main": path.resolve(__dirname, "./src/main"),
+            "@tests": path.resolve(__dirname, "./tests"),
+          },
         },
       },
       {
         test: {
           name: "renderer",
           environment: "happy-dom",
-          include: ["src/renderer/**/*.{test,spec}.{js,ts,tsx,jsx}"],
+          include: [
+            "src/renderer/**/*.{test,spec}.{js,ts,tsx,jsx}",
+            "src/shared/**/*.{test,spec}.{js,ts}",
+            "tests/renderer/**/*.{test,spec}.{js,ts}",
+          ],
+        },
+        resolve: {
+          alias: {
+            "@shared": path.resolve(__dirname, "./src/shared"),
+            "@renderer": path.resolve(__dirname, "./src/renderer"),
+            "@tests": path.resolve(__dirname, "./tests"),
+          },
+        },
+      },
+      {
+        test: {
+          name: "shared",
+          environment: "node",
+          include: [
+            "src/shared/**/*.{test,spec}.{js,ts}",
+            "tests/shared/**/*.{test,spec}.{js,ts}",
+          ],
+        },
+        resolve: {
+          alias: {
+            "@shared": path.resolve(__dirname, "./src/shared"),
+            "@tests": path.resolve(__dirname, "./tests"),
+          },
         },
       },
     ],
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
   },
 })
