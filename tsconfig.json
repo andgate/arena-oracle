@@ -19,6 +19,9 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@main/*": [
+        "src/main/*"
+      ],
       "@renderer/*": [
         "src/renderer/*"
       ],
