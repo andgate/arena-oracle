@@ -5,6 +5,8 @@ import { inject, injectable, singleton } from "tsyringe"
 import { IFileSystem } from "../../utils/fs/FileSystem.interface"
 import { IPlayerLogService } from "./PlayerLogService.interface"
 
+export const LOG_WATCH_INTERVAL_MS = 500
+
 @injectable()
 @singleton()
 export class PlayerLogService
@@ -50,25 +52,29 @@ export class PlayerLogService
     }
 
     // Watch for changes
-    this.fs.watchFile(this.logPath, { interval: 500 }, (curr, prev) => {
-      if (curr.size === prev.size) return
-      if (curr.size < prev.size) this.fileOffset = 0 // truncated or rotated
+    this.fs.watchFile(
+      this.logPath,
+      { interval: LOG_WATCH_INTERVAL_MS },
+      (curr, prev) => {
+        if (curr.size === prev.size) return
+        if (curr.size < prev.size) this.fileOffset = 0 // truncated or rotated
 
-      // Read only the new bytes
-      const stream = this.fs.createReadStream(this.logPath, {
-        start: this.fileOffset,
-        end: curr.size - 1,
-        encoding: "utf-8",
-      })
+        // Read only the new bytes
+        const stream = this.fs.createReadStream(this.logPath, {
+          start: this.fileOffset,
+          end: curr.size - 1,
+          encoding: "utf-8",
+        })
 
-      stream.on("data", (chunk) => {
-        this.chunkCount += 1
-        this.log$.next(chunk as string)
-      })
-      stream.on("end", () => {
-        this.fileOffset = curr.size
-      })
-    })
+        stream.on("data", (chunk) => {
+          this.chunkCount += 1
+          this.log$.next(chunk as string)
+        })
+        stream.on("end", () => {
+          this.fileOffset = curr.size
+        })
+      },
+    )
   }
 
   stop() {
