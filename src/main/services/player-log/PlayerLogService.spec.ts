@@ -1,6 +1,9 @@
+import {
+  MOCK_WATCH_INTERVAL_MS,
+  MockFileSystem,
+} from "@main/utils/fs/MockFileSystem"
 import { test as baseTest, describe, expect, vi } from "vitest"
-import { MockFileSystem } from "../../utils/fs/MockFileSystem"
-import { LOG_WATCH_INTERVAL_MS, PlayerLogService } from "./PlayerLogService"
+import { PlayerLogService } from "./PlayerLogService"
 
 const LOG_PATH = "/test/Player.log"
 
@@ -92,7 +95,7 @@ describe("PlayerLogService", () => {
 
     mockFs.writeFileSync(LOG_PATH, "initial appended")
 
-    await new Promise((r) => setTimeout(r, LOG_WATCH_INTERVAL_MS + 100))
+    await new Promise((r) => setTimeout(r, MOCK_WATCH_INTERVAL_MS + 100))
 
     expect(chunks.join("")).toContain("appended")
     expect(chunks).toHaveLength(2)
@@ -113,7 +116,7 @@ describe("PlayerLogService", () => {
     // Simulate log rotation — new content is shorter than original
     mockFs.writeFileSync(LOG_PATH, "new")
 
-    await new Promise((r) => setTimeout(r, LOG_WATCH_INTERVAL_MS + 100))
+    await new Promise((r) => setTimeout(r, MOCK_WATCH_INTERVAL_MS + 50))
 
     expect(chunks.join("")).toContain("new")
   }, 5000)
@@ -133,7 +136,7 @@ describe("PlayerLogService", () => {
     // Overwrite with same-length content — watchFile should no-op
     mockFs.writeFileSync(LOG_PATH, "changed")
 
-    await new Promise((r) => setTimeout(r, LOG_WATCH_INTERVAL_MS + 100))
+    await new Promise((r) => setTimeout(r, MOCK_WATCH_INTERVAL_MS + 50))
 
     expect(chunks).toHaveLength(1)
   }, 5000)

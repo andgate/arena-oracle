@@ -2,6 +2,8 @@ import type { ReadStream, Stats } from "fs"
 import { createFsFromVolume, Volume } from "memfs"
 import type { IFileSystem } from "./FileSystem.interface"
 
+export const MOCK_WATCH_INTERVAL_MS = 50
+
 export class MockFileSystem implements IFileSystem {
   private vol: InstanceType<typeof Volume>
   private fs: ReturnType<typeof createFsFromVolume>
@@ -24,7 +26,11 @@ export class MockFileSystem implements IFileSystem {
     options: { interval: number },
     listener: (curr: Stats, prev: Stats) => void,
   ): void {
-    this.fs.watchFile(path, options, listener as any)
+    this.fs.watchFile(
+      path,
+      { ...options, interval: MOCK_WATCH_INTERVAL_MS },
+      listener as any,
+    )
   }
 
   unwatchFile(path: string): void {
