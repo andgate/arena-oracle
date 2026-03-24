@@ -1,11 +1,10 @@
-import type { FSWatcher, ReadStream, Stats } from "fs"
+import type { ReadStream, Stats } from "fs"
 
 export const IFileSystem = Symbol("IFileSystem")
 
 export interface IFileSystem {
   readFileSync(path: string, encoding: BufferEncoding): string
   statSync(path: string): { size: number }
-  watch(path: string): FSWatcher
   watchFile(
     path: string,
     options: { interval: number },

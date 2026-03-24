@@ -15,9 +15,12 @@ export default defineConfig({
         "**/*.interface.ts",
         // Declaration files
         "**/*.d.ts",
+        // Mock files
+        "**/Mock*.{ts,tsx}",
         // DI wiring & symbol declarations
         "**/main/services/container.ts",
         "**/main/services/lifecycle.ts",
+        "**/main/utils/fs/FileSystem.ts",
         // Entry points & IPC wiring
         "**/main/main.ts",
         "**/main/ipc/**",
@@ -41,6 +44,7 @@ export default defineConfig({
         test: {
           name: "main",
           environment: "node",
+          setupFiles: ["tests/main/setup.ts"],
           include: [
             "src/main/**/*.{test,spec}.{js,ts}",
             "src/shared/**/*.{test,spec}.{js,ts}",

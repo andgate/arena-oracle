@@ -13,10 +13,6 @@ export class FileSystem implements IFileSystem {
     return fs.statSync(path)
   }
 
-  watch(path: string): fs.FSWatcher {
-    return fs.watch(path)
-  }
-
   watchFile(
     path: string,
     options: { interval: number },
