@@ -1,10 +1,10 @@
-// ============================================================
-// Card types
-// ============================================================
-
 import { ResolvedCard } from "./card-types"
 import { GameState } from "./game-state-types"
 import { TGameObject } from "./gre-types"
+
+// ============================================================
+// Card types
+// ============================================================
 
 export interface BattlefieldCard {
   instanceId: number
