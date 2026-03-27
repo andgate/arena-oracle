@@ -34,7 +34,9 @@ function applyDiff(
 
   // Detect new game: gameStateId reset to a low value while we have a high one
   const isNewGame =
-    diff.gameStateId < state.gameStateId && diff.gameStateId <= 10
+    diff.gameStateId < state.gameStateId &&
+    diff.gameStateId <= 10 &&
+    state.gameStateId > 50
   if (isNewGame) {
     effects.push({ type: "gameReset" })
     return {
