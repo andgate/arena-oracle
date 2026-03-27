@@ -3,14 +3,14 @@ import { ReplaySubject } from "rxjs"
 import { IStartable, IStoppable } from "src/main/services/lifecycle"
 import { inject, injectable, singleton } from "tsyringe"
 import { IFileSystem } from "../../utils/fs/FileSystem.interface"
-import { IPlayerLogService } from "./PlayerLogService.interface"
+import { IPlayerLogWatchService } from "./PlayerLogWatchService.interface"
 
 export const LOG_WATCH_INTERVAL_MS = 500
 
 @injectable()
 @singleton()
-export class PlayerLogService
-  implements IPlayerLogService, IStartable, IStoppable
+export class PlayerLogWatchService
+  implements IPlayerLogWatchService, IStartable, IStoppable
 {
   readonly log$ = new ReplaySubject<string>(100)
 

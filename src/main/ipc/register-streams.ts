@@ -3,7 +3,7 @@ import { Observable, ReplaySubject, Subscription } from "rxjs"
 import { ICoachingSnapshotService } from "../services/coaching-snapshot/CoachingSnapshotService.interface"
 import { container } from "../services/container"
 import { IGameStateService } from "../services/game-state/GameStateService.interface"
-import { IPlayerLogService } from "../services/player-log/PlayerLogService.interface"
+import { IPlayerLogWatchService } from "../services/player-log-watch/PlayerLogWatchService.interface"
 
 function bridgeStream<T>(
   channel: string,
@@ -42,15 +42,16 @@ function bridgeStream<T>(
 }
 
 export function registerStreams(win: BrowserWindow): void {
-  const playerLogService =
-    container.resolve<IPlayerLogService>(IPlayerLogService)
+  const playerLogWatchService = container.resolve<IPlayerLogWatchService>(
+    IPlayerLogWatchService,
+  )
   const gameStateService =
     container.resolve<IGameStateService>(IGameStateService)
   const coachingSnapshotService = container.resolve<ICoachingSnapshotService>(
     ICoachingSnapshotService,
   )
 
-  bridgeStream("player-log", playerLogService.log$, win, 100)
+  bridgeStream("player-log", playerLogWatchService.log$, win, 100)
   bridgeStream("game-state:updated", gameStateService.stateUpdated$, win)
   bridgeStream(
     "game-state:decision-required",
