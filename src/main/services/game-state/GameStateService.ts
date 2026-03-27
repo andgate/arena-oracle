@@ -31,7 +31,10 @@ export class GameStateService implements IGameStateService, IStoppable {
           this.gameState.localPlayerSeatId === null &&
           msg.systemSeatIds.length > 0
         ) {
-          this.gameState.localPlayerSeatId = msg.systemSeatIds[0]
+          this.gameState = {
+            ...this.gameState,
+            localPlayerSeatId: msg.systemSeatIds[0],
+          }
         }
 
         const result = reduceMessage(this.gameState, this.lastDecisionKey, msg)
