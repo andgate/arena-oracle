@@ -9,12 +9,17 @@ import { ICoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotSe
 import { GameStateService } from "./game-state/GameStateService"
 import { IGameStateService } from "./game-state/GameStateService.interface"
 import { IStartable, IStoppable } from "./lifecycle"
+import { PlayerLogParserService } from "./player-log-parser/PlayerLogParserService"
+import { IPlayerLogParserService } from "./player-log-parser/PlayerLogParserService.interface"
 import { PlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService"
 import { IPlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService.interface"
 
 // Bind interfaces to service implementations
 container.register(IFileSystem, { useToken: FileSystem })
 container.register(IPlayerLogWatchService, { useToken: PlayerLogWatchService })
+container.register(IPlayerLogParserService, {
+  useToken: PlayerLogParserService,
+})
 container.register(IGameStateService, { useToken: GameStateService })
 container.register(ICardDbService, { useToken: CardDbService })
 container.register(ICoachingSnapshotService, {
