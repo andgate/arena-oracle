@@ -3,7 +3,7 @@ import {
   MockFileSystem,
 } from "@main/utils/fs/MockFileSystem"
 import { test as baseTest, describe, expect, vi } from "vitest"
-import { PlayerLogService } from "./PlayerLogService"
+import { PlayerLogWatchService } from "./PlayerLogWatchService"
 
 const LOG_PATH = "/test/Player.log"
 
@@ -14,7 +14,7 @@ vi.mock("@main/utils/mtga-paths", () => ({
 
 type Fixtures = {
   mockFs: MockFileSystem
-  service: PlayerLogService
+  service: PlayerLogWatchService
 }
 
 const test = baseTest.extend<Fixtures>({
@@ -22,11 +22,11 @@ const test = baseTest.extend<Fixtures>({
     await use(new MockFileSystem())
   },
   service: async ({ mockFs }, use) => {
-    await use(new PlayerLogService(mockFs))
+    await use(new PlayerLogWatchService(mockFs))
   },
 })
 
-describe("PlayerLogService", () => {
+describe("PlayerLogWatchService", () => {
   test("creates the log file if it does not exist on start()", ({
     service,
     mockFs,

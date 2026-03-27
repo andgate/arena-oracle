@@ -4,7 +4,7 @@ import { parseLogLine } from "@shared/gre-types"
 import { BehaviorSubject, Subject, Subscription } from "rxjs"
 import { inject, injectable, singleton } from "tsyringe"
 import { IStoppable } from "../lifecycle"
-import { IPlayerLogService } from "../player-log/PlayerLogService.interface"
+import { IPlayerLogWatchService } from "../player-log-watch/PlayerLogWatchService.interface"
 import { IGameStateService } from "./GameStateService.interface"
 
 // ============================================================
@@ -40,8 +40,11 @@ export class GameStateService implements IGameStateService, IStoppable {
 
   private unsubPlayerLog: Subscription | null = null
 
-  constructor(@inject(IPlayerLogService) playerLogService: IPlayerLogService) {
-    this.unsubPlayerLog = playerLogService.log$.subscribe((chunk) => {
+  constructor(
+    @inject(IPlayerLogWatchService)
+    playerLogWatchService: IPlayerLogWatchService,
+  ) {
+    this.unsubPlayerLog = playerLogWatchService.log$.subscribe((chunk) => {
       this.processChunk(chunk)
     })
   }
@@ -141,7 +144,8 @@ export class GameStateService implements IGameStateService, IStoppable {
       const event = parseLogLine(line)
       if (!event) continue
 
-      for (const msg of event.greToClientEvent.greToClientMessages as TGREMessage[]) {
+      for (const msg of event.greToClientEvent
+        .greToClientMessages as TGREMessage[]) {
         // Always try to grab localPlayerSeatId from any message
         if (
           this.gameState.localPlayerSeatId === null &&
@@ -160,16 +164,36 @@ export class GameStateService implements IGameStateService, IStoppable {
 
   private handleMessage(msg: TGREMessage): void {
     switch (msg.type) {
-      case "GREMessageType_GameStateMessage":    this.handleGameStateMessage(msg); break
-      case "GREMessageType_ActionsAvailableReq": this.handleActionsAvailableReq(msg); break
-      case "GREMessageType_DeclareAttackersReq": this.handleDeclareAttackersReq(msg); break
-      case "GREMessageType_DeclareBlockersReq":  this.handleDeclareBlockersReq(msg); break
-      case "GREMessageType_SelectTargetsReq":    this.handleSelectTargetsReq(msg); break
-      case "GREMessageType_PayCostsReq":         this.handlePayCostsReq(msg); break
-      case "GREMessageType_AssignDamageReq":     this.handleAssignDamageReq(msg); break
-      case "GREMessageType_ConnectResp":         this.handleConnectResp(); break
-      case "GREMessageType_MulliganReq":         this.handleMulliganReq(msg); break
-      case "GREMessageType_GroupReq":            this.handleGroupReq(msg); break
+      case "GREMessageType_GameStateMessage":
+        this.handleGameStateMessage(msg)
+        break
+      case "GREMessageType_ActionsAvailableReq":
+        this.handleActionsAvailableReq(msg)
+        break
+      case "GREMessageType_DeclareAttackersReq":
+        this.handleDeclareAttackersReq(msg)
+        break
+      case "GREMessageType_DeclareBlockersReq":
+        this.handleDeclareBlockersReq(msg)
+        break
+      case "GREMessageType_SelectTargetsReq":
+        this.handleSelectTargetsReq(msg)
+        break
+      case "GREMessageType_PayCostsReq":
+        this.handlePayCostsReq(msg)
+        break
+      case "GREMessageType_AssignDamageReq":
+        this.handleAssignDamageReq(msg)
+        break
+      case "GREMessageType_ConnectResp":
+        this.handleConnectResp()
+        break
+      case "GREMessageType_MulliganReq":
+        this.handleMulliganReq(msg)
+        break
+      case "GREMessageType_GroupReq":
+        this.handleGroupReq(msg)
+        break
     }
   }
 
@@ -259,8 +283,7 @@ export class GameStateService implements IGameStateService, IStoppable {
     )
   }
 
-  private handleConnectResp(
-  ): void {
+  private handleConnectResp(): void {
     this.gameState = initialGameState()
     this.lastDecisionKey = ""
     this.gameReset$.next(undefined)
