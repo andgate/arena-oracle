@@ -101,3 +101,7 @@ src.txt
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# MTGA Files
+Raw_CardDatabase_*.mtga
+Player.log

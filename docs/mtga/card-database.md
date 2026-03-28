@@ -37,23 +37,23 @@ C:\Program Files\Steam\steamapps\common\MTGA\MTGA_Data\Downloads\Raw
 
 Primary card data. `GrpId` is the primary key and matches the `grpId` field in GRE game objects.
 
-| Column              | Type    | Description                                                                                  |
-| ------------------- | ------- | -------------------------------------------------------------------------------------------- |
-| `GrpId`             | INT     | Primary key. Matches `grpId` in GRE log                                                      |
-| `TitleId`           | INT     | Foreign key into `Localizations_enUS` for card name                                          |
-| `TypeTextId`        | INT     | Foreign key into `Localizations_enUS` for pre-rendered type line e.g. `"Legendary Creature"` |
-| `SubtypeTextId`     | INT     | Foreign key into `Localizations_enUS` for pre-rendered subtype line e.g. `"Elf Druid"`       |
-| `OldSchoolManaText` | TEXT    | Encoded mana cost e.g. `o2oGoG` → `{2}{G}{G}`                                                |
-| `Colors`            | TEXT    | Comma-separated color enum values e.g. `"1,2"`                                               |
-| `Types`             | TEXT    | Comma-separated type enum values e.g. `"2"`                                                  |
-| `Subtypes`          | TEXT    | Comma-separated subtype enum values e.g. `"27,23"`                                           |
-| `Power`             | TEXT    | Printed power, string to support `*` values                                                  |
-| `Toughness`         | TEXT    | Printed toughness, string to support `*` values                                              |
-| `Rarity`            | INT     | 1=Common, 2=Uncommon, 3=Rare, 4=Mythic Rare                                                  |
-| `ExpansionCode`     | TEXT    | Set code e.g. `"MKM"`                                                                        |
-| `IsPrimaryCard`     | BOOLEAN | False for alt-art and reprint variants                                                       |
-| `AbilityIds`        | TEXT    | Comma-separated ability IDs, foreign keys into `Abilities`                                   |
-| `CollectorNumber`   | TEXT    | Collector number within set                                                                  |
+| Column              | Type    | Description                                                                                                                                       |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GrpId`             | INT     | Primary key. Matches `grpId` in GRE log                                                                                                           |
+| `TitleId`           | INT     | Foreign key into `Localizations_enUS` for card name                                                                                               |
+| `TypeTextId`        | INT     | Foreign key into `Localizations_enUS` for pre-rendered type line e.g. `"Legendary Creature"`                                                      |
+| `SubtypeTextId`     | INT     | Foreign key into `Localizations_enUS` for pre-rendered subtype line e.g. `"Elf Druid"`                                                            |
+| `OldSchoolManaText` | TEXT    | Encoded mana cost e.g. `o2oGoG` → `{2}{G}{G}`                                                                                                     |
+| `Colors`            | TEXT    | Comma-separated color enum values e.g. `"1,2"`                                                                                                    |
+| `Types`             | TEXT    | Comma-separated type enum values e.g. `"2"`                                                                                                       |
+| `Subtypes`          | TEXT    | Comma-separated subtype enum values e.g. `"27,23"`                                                                                                |
+| `Power`             | TEXT    | Printed power, string to support `*` values                                                                                                       |
+| `Toughness`         | TEXT    | Printed toughness, string to support `*` values                                                                                                   |
+| `Rarity`            | INT     | 1=Common, 2=Uncommon, 3=Rare, 4=Mythic Rare                                                                                                       |
+| `ExpansionCode`     | TEXT    | Set code e.g. `"MKM"`                                                                                                                             |
+| `IsPrimaryCard`     | BOOLEAN | False for alt-art and reprint variants                                                                                                            |
+| `AbilityIds`        | TEXT    | Comma-separated `abilityId:localizationId` pairs e.g. `"9:101,86:27"`. Take the left side of `:` to get the ability ID for lookup in `Abilities`. |
+| `CollectorNumber`   | TEXT    | Collector number within set                                                                                                                       |
 
 ### `Localizations_enUS`
 
@@ -71,10 +71,10 @@ Additional locale tables follow the same schema: `Localizations_ptBR`, `Localiza
 
 Ability definitions referenced by `Cards.AbilityIds`.
 
-| Column   | Type | Description                                            |
-| -------- | ---- | ------------------------------------------------------ |
-| `Id`     | INT  | Primary key, matches values in `Cards.AbilityIds`      |
-| `TextId` | INT  | Foreign key into `Localizations_enUS` for ability text |
+| Column   | Type | Description                                                                                      |
+| -------- | ---- | ------------------------------------------------------------------------------------------------ |
+| `Id`     | INT  | Primary key, matches the left side of each `abilityId:localizationId` pair in `Cards.AbilityIds` |
+| `TextId` | INT  | Foreign key into `Localizations_enUS` for ability text                                           |
 
 Ability text uses two placeholder conventions that need decoding:
 
@@ -90,6 +90,11 @@ Note: The `Enums.LocId` → `Localizations_enUS.LocId` join does not work reliab
 ### `AltPrintings` / `AltToBasePrintings`
 
 Maps alternate art and reprint `GrpId` values back to their base card. Useful if you need to normalize all printings of a card to a single canonical entry.
+
+| Column      | Type | Description                     |
+| ----------- | ---- | ------------------------------- |
+| `BaseGrpId` | INT  | The canonical base card's GrpId |
+| `AltGrpId`  | INT  | The alternate printing's GrpId  |
 
 ## Hardcoded Enum Mappings
 
