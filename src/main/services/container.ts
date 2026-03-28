@@ -6,6 +6,8 @@ import { CardDbService } from "./card-db/CardDbService"
 import { ICardDbService } from "./card-db/CardDbService.interface"
 import { CoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotService"
 import { ICoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotService.interface"
+import { CoachingSnapshotTransform } from "./coaching-snapshot/CoachingSnapshotTransform"
+import { ICoachingSnapshotTransform } from "./coaching-snapshot/CoachingSnapshotTransform.interface"
 import { GameStateService } from "./game-state/GameStateService"
 import { IGameStateService } from "./game-state/GameStateService.interface"
 import { IStartable, IStoppable } from "./lifecycle"
@@ -22,6 +24,9 @@ container.register(IPlayerLogParserService, {
 })
 container.register(IGameStateService, { useToken: GameStateService })
 container.register(ICardDbService, { useToken: CardDbService })
+container.register(ICoachingSnapshotTransform, {
+  useToken: CoachingSnapshotTransform,
+})
 container.register(ICoachingSnapshotService, {
   useToken: CoachingSnapshotService,
 })

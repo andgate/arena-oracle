@@ -9,7 +9,7 @@ import type {
   TTargetSlot,
   TTurnInfo,
   TZoneState,
-} from "./gre-types"
+} from "./gre/gre-types"
 
 // ============================================================
 // Type Definitions

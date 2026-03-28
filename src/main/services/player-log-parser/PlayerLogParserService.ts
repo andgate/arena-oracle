@@ -1,5 +1,6 @@
 import { IPlayerLogWatchService } from "@main/services/player-log-watch/PlayerLogWatchService.interface"
-import { parseLogLine, TGreToClientEvent } from "@shared/gre-types"
+import { parseLogLine } from "@shared/gre/gre-parser"
+import { TGreToClientEvent } from "@shared/gre/gre-types"
 import { mergeMap, Observable } from "rxjs"
 import { inject, injectable, singleton } from "tsyringe"
 import { IPlayerLogParserService } from "./PlayerLogParserService.interface"

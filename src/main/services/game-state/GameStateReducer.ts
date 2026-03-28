@@ -1,5 +1,5 @@
 import { GameState, PendingDecision } from "@shared/game-state-types"
-import type { TGameStateDiff, TGREMessage } from "@shared/gre-types"
+import type { TGameStateDiff, TGREMessage } from "@shared/gre/gre-types"
 import { produce } from "immer"
 
 // ============================================================
