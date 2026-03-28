@@ -1,7 +1,7 @@
 import { GameState } from "@shared/game-state-types"
 import { TGREMessage, TGameObject } from "@shared/gre/gre-types"
 import { describe, expect, it } from "vitest"
-import { Effect, initialGameState, reduceMessage } from "./GameStateReducer"
+import { Effect, GameStateReducer, initialGameState } from "./GameStateReducer"
 
 function state(overrides: Partial<GameState> = {}): GameState {
   return { ...initialGameState(), ...overrides }
@@ -42,13 +42,15 @@ function connectRespMsg(): Extract<
 }
 
 function effectTypes(effects: Effect[]): string[] {
-  return effects.map((e) => e.type)
+  return effects.map((effect) => effect.type)
 }
+
+const reducer = new GameStateReducer()
 
 describe("reduceMessage - ConnectResp", () => {
   it("resets state to initial and emits gameReset", () => {
     const s = state({ gameStateId: 100, localPlayerSeatId: 1 })
-    const result = reduceMessage(s, "someKey", connectRespMsg())
+    const result = reducer.reduceMessage(s, "someKey", connectRespMsg())
 
     expect(result.state).toEqual(initialGameState())
     expect(result.lastDecisionKey).toBe("")
@@ -74,7 +76,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
       name: 100,
       overlayGrpId: 0,
     }
-    const result = reduceMessage(
+    const result = reducer.reduceMessage(
       state(),
       "",
       gameStateMsg(1, { gameObjects: [obj] }),
@@ -114,7 +116,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
       },
       gameStateId: 1,
     })
-    const result = reduceMessage(
+    const result = reducer.reduceMessage(
       s,
       "",
       gameStateMsg(2, { diffDeletedInstanceIds: [1] }),
@@ -132,11 +134,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
       ownerSeatId: 1,
       objectInstanceIds: [5, 6],
     }
-    const result = reduceMessage(
-      state(),
-      "",
-      gameStateMsg(1, { zones: [zone] }),
-    )
+    const result = reducer.reduceMessage(state(), "", gameStateMsg(1, { zones: [zone] }))
 
     expect(result.state.zones[10]).toMatchObject({ zoneId: 10, ownerSeatId: 1 })
   })
@@ -148,7 +146,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
       visibility: "Visibility_Public" as const,
       objectInstanceIds: [7, 8],
     }
-    const result = reduceMessage(
+    const result = reducer.reduceMessage(
       state(),
       "",
       gameStateMsg(1, { zones: [stackZone] }),
@@ -170,7 +168,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
         },
       },
     })
-    const result = reduceMessage(
+    const result = reducer.reduceMessage(
       s,
       "",
       gameStateMsg(2, {
@@ -191,7 +189,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
   })
 
   it("uses seatId when systemSeatNumber is absent", () => {
-    const result = reduceMessage(
+    const result = reducer.reduceMessage(
       state(),
       "",
       gameStateMsg(1, {
@@ -214,7 +212,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
   })
 
   it("ignores players that have neither systemSeatNumber nor seatId", () => {
-    const result = reduceMessage(
+    const result = reducer.reduceMessage(
       state(),
       "",
       gameStateMsg(1, {
@@ -239,7 +237,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
       activePlayer: 1,
       priorityPlayer: 1,
     }
-    const result = reduceMessage(state(), "", gameStateMsg(1, { turnInfo }))
+    const result = reducer.reduceMessage(state(), "", gameStateMsg(1, { turnInfo }))
 
     expect(result.state.turnInfo).toMatchObject({
       turnNumber: 3,
@@ -248,18 +246,22 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
   })
 
   it("advances gameStateId", () => {
-    const result = reduceMessage(state({ gameStateId: 5 }), "", gameStateMsg(6))
+    const result = reducer.reduceMessage(
+      state({ gameStateId: 5 }),
+      "",
+      gameStateMsg(6),
+    )
     expect(result.state.gameStateId).toBe(6)
   })
 
   it("emits stateUpdated effect when diff is applied", () => {
-    const result = reduceMessage(state(), "", gameStateMsg(1))
+    const result = reducer.reduceMessage(state(), "", gameStateMsg(1))
     expect(effectTypes(result.effects)).toContain("stateUpdated")
   })
 
   it("ignores duplicate diffs with same gameStateId", () => {
     const s = state({ gameStateId: 5 })
-    const result = reduceMessage(s, "", gameStateMsg(5))
+    const result = reducer.reduceMessage(s, "", gameStateMsg(5))
 
     expect(result.state).toBe(s)
     expect(result.effects).toHaveLength(0)
@@ -267,7 +269,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
 
   it("ignores diffs with lower gameStateId", () => {
     const s = state({ gameStateId: 10 })
-    const result = reduceMessage(s, "", gameStateMsg(4))
+    const result = reducer.reduceMessage(s, "", gameStateMsg(4))
 
     expect(result.state).toBe(s)
     expect(result.effects).toHaveLength(0)
@@ -275,7 +277,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
 
   it("emits gameReset and clears state when gameStateId resets to a low value", () => {
     const s = state({ gameStateId: 100 })
-    const result = reduceMessage(s, "", gameStateMsg(3))
+    const result = reducer.reduceMessage(s, "", gameStateMsg(3))
 
     expect(effectTypes(result.effects)).toEqual(["gameReset"])
     expect(result.state).toEqual(initialGameState())
@@ -283,7 +285,7 @@ describe("reduceMessage - GameStateMessage / applyDiff", () => {
 
   it("resets lastDecisionKey on new game", () => {
     const s = state({ gameStateId: 100 })
-    const result = reduceMessage(s, "100:ActionsAvailable", gameStateMsg(3))
+    const result = reducer.reduceMessage(s, "100:ActionsAvailable", gameStateMsg(3))
 
     expect(result.lastDecisionKey).toBe("")
   })
@@ -293,7 +295,7 @@ describe("reduceMessage - buildDecision", () => {
   const BASE_STATE = state({ localPlayerSeatId: 1, gameStateId: 1 })
 
   function decisionMsg<T extends TGREMessage>(msg: T) {
-    return reduceMessage(BASE_STATE, "", msg)
+    return reducer.reduceMessage(BASE_STATE, "", msg)
   }
 
   it("ActionsAvailable emits decisionRequired and populates availableActions", () => {
@@ -449,7 +451,7 @@ describe("reduceMessage - buildDecision", () => {
       gameStateId: 2,
       mulliganReq: { mulliganType: "MulliganType_London", mulliganCount: 1 },
     }
-    const result = reduceMessage(s, "", msg)
+    const result = reducer.reduceMessage(s, "", msg)
 
     expect(result.state.pendingDecision).toMatchObject({
       type: "Mulligan",
@@ -551,7 +553,7 @@ describe("reduceMessage - buildDecision", () => {
       type: "GREMessageType_SomeUnknownType",
       systemSeatIds: [1],
     } as unknown as TGREMessage
-    const result = reduceMessage(s, "", msg)
+    const result = reducer.reduceMessage(s, "", msg)
 
     expect(result.state).toBe(s)
     expect(result.effects).toHaveLength(0)
@@ -569,8 +571,12 @@ describe("reduceMessage - decision deduplication", () => {
 
   it("does not emit decisionRequired for the same gameStateId and type key twice", () => {
     const s = state()
-    const first = reduceMessage(s, "", passMsg(5))
-    const second = reduceMessage(first.state, first.lastDecisionKey, passMsg(5))
+    const first = reducer.reduceMessage(s, "", passMsg(5))
+    const second = reducer.reduceMessage(
+      first.state,
+      first.lastDecisionKey,
+      passMsg(5),
+    )
 
     expect(effectTypes(second.effects)).not.toContain("decisionRequired")
     expect(second.effects).toHaveLength(0)
@@ -578,8 +584,12 @@ describe("reduceMessage - decision deduplication", () => {
 
   it("emits decisionRequired when the key changes", () => {
     const s = state()
-    const first = reduceMessage(s, "", passMsg(5))
-    const second = reduceMessage(first.state, first.lastDecisionKey, passMsg(6))
+    const first = reducer.reduceMessage(s, "", passMsg(5))
+    const second = reducer.reduceMessage(
+      first.state,
+      first.lastDecisionKey,
+      passMsg(6),
+    )
 
     expect(effectTypes(second.effects)).toContain("decisionRequired")
   })

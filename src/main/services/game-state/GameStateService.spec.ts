@@ -1,8 +1,14 @@
+import { GameState } from "@shared/game-state-types"
 import { TGREMessage, TGreToClientEvent } from "@shared/gre/gre-types"
 import { Subject, firstValueFrom } from "rxjs"
 import { skip, take } from "rxjs/operators"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { IPlayerLogParserService } from "../player-log-parser/PlayerLogParserService.interface"
+import { initialGameState } from "./GameStateReducer"
+import {
+  GameStateReducerEffect,
+  IGameStateReducer,
+} from "./GameStateReducer.interface"
 import { GameStateService } from "./GameStateService"
 
 function makeParserService(): IPlayerLogParserService & {
@@ -68,20 +74,47 @@ function connectRespMsg(
   }
 }
 
+function makeReducerResult(
+  state: GameState = initialGameState(),
+  effects: GameStateReducerEffect[] = [],
+  lastDecisionKey = "",
+) {
+  return {
+    state,
+    effects,
+    lastDecisionKey,
+  }
+}
+
 describe("GameStateService", () => {
   let parserService: ReturnType<typeof makeParserService>
+  let reducer: IGameStateReducer
   let service: GameStateService
 
   beforeEach(() => {
     parserService = makeParserService()
-    service = new GameStateService(parserService)
+    reducer = {
+      reduceMessage: () => makeReducerResult(),
+    }
+    service = new GameStateService(parserService, reducer)
   })
 
   afterEach(() => {
     service.stop()
   })
 
-  it("emits on stateUpdated$ after a valid GameStateMessage event", async () => {
+  it("emits on stateUpdated$ when the reducer publishes a stateUpdated effect", async () => {
+    const nextStateValue = {
+      ...initialGameState(),
+      gameStateId: 1,
+    }
+    reducer.reduceMessage = () =>
+      makeReducerResult(nextStateValue, [
+        {
+          type: "stateUpdated",
+          state: nextStateValue,
+        },
+      ])
     const nextState = firstValueFrom(
       service.stateUpdated$.pipe(skip(1), take(1)),
     )
@@ -93,7 +126,22 @@ describe("GameStateService", () => {
     })
   })
 
-  it("emits on decisionRequired$ after a valid decision message event", async () => {
+  it("emits on decisionRequired$ when the reducer publishes a decision effect", async () => {
+    const decisionState = {
+      ...initialGameState(),
+      pendingDecision: {
+        type: "ActionsAvailable" as const,
+        actions: [{ actionType: "ActionType_Pass" as const }],
+      },
+      availableActions: [{ actionType: "ActionType_Pass" as const }],
+    }
+    reducer.reduceMessage = () =>
+      makeReducerResult(decisionState, [
+        {
+          type: "decisionRequired",
+          state: decisionState,
+        },
+      ])
     const nextDecision = firstValueFrom(
       service.decisionRequired$.pipe(skip(1), take(1)),
     )
@@ -108,7 +156,9 @@ describe("GameStateService", () => {
     })
   })
 
-  it("fires gameReset$ on ConnectResp", async () => {
+  it("fires gameReset$ when the reducer publishes a reset effect", async () => {
+    reducer.reduceMessage = () =>
+      makeReducerResult(initialGameState(), [{ type: "gameReset" }])
     const reset = firstValueFrom(service.gameReset$.pipe(take(1)))
 
     parserService.subject.next(makeEvent([connectRespMsg([1])]))
@@ -116,7 +166,23 @@ describe("GameStateService", () => {
     await expect(reset).resolves.toBeUndefined()
   })
 
-  it("populates localPlayerSeatId from the first message received", async () => {
+  it("populates localPlayerSeatId from the first message received before reducing", async () => {
+    reducer.reduceMessage = (currentState) =>
+      makeReducerResult(
+        {
+          ...currentState,
+          gameStateId: 1,
+        },
+        [
+          {
+            type: "stateUpdated",
+            state: {
+              ...currentState,
+              gameStateId: 1,
+            },
+          },
+        ],
+      )
     const nextState = firstValueFrom(
       service.stateUpdated$.pipe(skip(1), take(1)),
     )
@@ -130,6 +196,23 @@ describe("GameStateService", () => {
   })
 
   it("does not populate localPlayerSeatId from an empty systemSeatIds array", async () => {
+    reducer.reduceMessage = (currentState, lastDecisionKey, msg) =>
+      makeReducerResult(
+        {
+          ...currentState,
+          gameStateId: msg.gameStateId,
+        },
+        [
+          {
+            type: "stateUpdated",
+            state: {
+              ...currentState,
+              gameStateId: msg.gameStateId,
+            },
+          },
+        ],
+        lastDecisionKey,
+      )
     const nextState = firstValueFrom(
       service.stateUpdated$.pipe(skip(1), take(1)),
     )
@@ -142,5 +225,20 @@ describe("GameStateService", () => {
       localPlayerSeatId: null,
       gameStateId: 1,
     })
+  })
+
+  it("passes parser messages to the reducer in order", () => {
+    const seen: TGREMessage[] = []
+    reducer.reduceMessage = (currentState, lastDecisionKey, msg) => {
+      seen.push(msg)
+      return makeReducerResult(currentState, [], lastDecisionKey)
+    }
+
+    const first = gameStateMsg([1], 1)
+    const second = actionsAvailableMsg([1], 2)
+
+    parserService.subject.next(makeEvent([first, second]))
+
+    expect(seen).toEqual([first, second])
   })
 })

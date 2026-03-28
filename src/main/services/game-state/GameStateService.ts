@@ -3,7 +3,9 @@ import { BehaviorSubject, Subject, Subscription } from "rxjs"
 import { inject, injectable, singleton } from "tsyringe"
 import { IStoppable } from "../lifecycle"
 import { IPlayerLogParserService } from "../player-log-parser/PlayerLogParserService.interface"
-import { initialGameState, reduceMessage } from "./GameStateReducer"
+import { initialGameState } from "./GameStateReducer"
+import type { IGameStateReducer } from "./GameStateReducer.interface"
+import { IGameStateReducer as IGameStateReducerToken } from "./GameStateReducer.interface"
 import { IGameStateService } from "./GameStateService.interface"
 
 @injectable()
@@ -22,6 +24,7 @@ export class GameStateService implements IGameStateService, IStoppable {
 
   constructor(
     @inject(IPlayerLogParserService) parserService: IPlayerLogParserService,
+    @inject(IGameStateReducerToken) private reducer: IGameStateReducer,
   ) {
     this.unsubParser = parserService.events$.subscribe((event) => {
       for (const msg of event.greToClientEvent
@@ -37,7 +40,11 @@ export class GameStateService implements IGameStateService, IStoppable {
           }
         }
 
-        const result = reduceMessage(this.gameState, this.lastDecisionKey, msg)
+        const result = this.reducer.reduceMessage(
+          this.gameState,
+          this.lastDecisionKey,
+          msg,
+        )
         this.gameState = result.state
         this.lastDecisionKey = result.lastDecisionKey
 
@@ -55,7 +62,9 @@ export class GameStateService implements IGameStateService, IStoppable {
   // Effect publisher — wires ReducerResult effects to RxJS subjects
   // ============================================================
 
-  private publishEffects(effects: ReturnType<typeof reduceMessage>["effects"]) {
+  private publishEffects(
+    effects: ReturnType<IGameStateReducer["reduceMessage"]>["effects"],
+  ) {
     for (const effect of effects) {
       switch (effect.type) {
         case "stateUpdated":

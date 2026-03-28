@@ -1,24 +1,23 @@
 import { GameState, PendingDecision } from "@shared/game-state-types"
 import type { TGameStateDiff, TGREMessage } from "@shared/gre/gre-types"
 import { produce } from "immer"
+import { injectable, singleton } from "tsyringe"
+import type { IGameStateReducer } from "./GameStateReducer.interface"
+import {
+  GameStateReducerEffect,
+  GameStateReducerResult,
+} from "./GameStateReducer.interface"
 
 // ============================================================
-// Effects — side effects to publish after reducing a message
+// Effects - side effects to publish after reducing a message
 // ============================================================
 
-export type Effect =
-  | { type: "stateUpdated"; state: GameState }
-  | { type: "decisionRequired"; state: GameState }
-  | { type: "gameReset" }
+export type Effect = GameStateReducerEffect
 
-export type ReducerResult = {
-  state: GameState
-  lastDecisionKey: string
-  effects: Effect[]
-}
+export type ReducerResult = GameStateReducerResult
 
 // ============================================================
-// Diff applicator — Immer-based upsert/delete/merge/reset detection
+// Diff applicator - Immer-based upsert/delete/merge/reset detection
 // ============================================================
 
 function applyDiff(
@@ -47,7 +46,7 @@ function applyDiff(
   }
 
   if (!isNewGame && diff.gameStateId <= state.gameStateId) {
-    // Already seen — no-op
+    // Already seen - no-op
     return { state, lastDecisionKey, effects }
   }
 
@@ -96,7 +95,7 @@ function applyDiff(
 }
 
 // ============================================================
-// Decision builder — maps each GRE message type to its PendingDecision shape
+// Decision builder - maps each GRE message type to its PendingDecision shape
 // ============================================================
 
 function buildDecision(
@@ -144,7 +143,7 @@ function buildDecision(
       }
 
     case "GREMessageType_MulliganReq": {
-      // Hand instance IDs are in the hand zone — grab them from current state
+      // Hand instance IDs are in the hand zone - grab them from current state
       const handZone = Object.values(state.zones).find(
         (z) =>
           z.type === "ZoneType_Hand" &&
@@ -176,8 +175,7 @@ function buildDecision(
 }
 
 // ============================================================
-// initialGameState — kept here so the reducer is self-contained
-// (GameStateService re-exports it for its own init)
+// initialGameState - kept here so the reducer is self-contained
 // ============================================================
 
 export const initialGameState = (): GameState => ({
@@ -192,66 +190,60 @@ export const initialGameState = (): GameState => ({
   gameStateId: 0,
 })
 
-// ============================================================
-// reduceMessage — pure function, no RxJS, no subjects, no side effects.
-// Takes current state + lastDecisionKey + a parsed GRE message,
-// returns next state, updated decision key, and effects to publish.
-// ============================================================
-
-export function reduceMessage(
-  state: GameState,
-  lastDecisionKey: string,
-  msg: TGREMessage,
-): ReducerResult {
-  // ConnectResp signals a hard reset regardless of gameStateId
-  if (msg.type === "GREMessageType_ConnectResp") {
-    return {
-      state: initialGameState(),
-      lastDecisionKey: "",
-      effects: [{ type: "gameReset" }],
-    }
-  }
-
-  // Apply game state diff and emit stateUpdated
-  if (msg.type === "GREMessageType_GameStateMessage") {
-    const {
-      state: next,
-      lastDecisionKey: nextKey,
-      effects,
-    } = applyDiff(state, msg.gameStateMessage, lastDecisionKey)
-    // Only emit stateUpdated if the diff was actually applied (not a no-op or reset)
-    if (!effects.find((e) => e.type === "gameReset") && next !== state) {
-      effects.push({ type: "stateUpdated", state: structuredClone(next) })
-    }
-    return { state: next, lastDecisionKey: nextKey, effects }
-  }
-
-  // Decision messages — deduplicates by gameStateId + decision type
-  const decision = buildDecision(msg, state)
-  if (decision) {
-    const key = `${msg.gameStateId}:${decision.type}`
-    if (key === lastDecisionKey) {
-      // Already fired — no-op
-      return { state, lastDecisionKey, effects: [] }
-    }
-
-    const next = produce(state, (draft) => {
-      draft.pendingDecision = decision
-      // Keep availableActions in sync for canCast checks in snapshot service
-      if (decision.type === "ActionsAvailable") {
-        draft.availableActions = decision.actions
-      } else {
-        draft.availableActions = []
+@injectable()
+@singleton()
+export class GameStateReducer implements IGameStateReducer {
+  reduceMessage(
+    state: GameState,
+    lastDecisionKey: string,
+    msg: TGREMessage,
+  ): ReducerResult {
+    // ConnectResp signals a hard reset regardless of gameStateId
+    if (msg.type === "GREMessageType_ConnectResp") {
+      return {
+        state: initialGameState(),
+        lastDecisionKey: "",
+        effects: [{ type: "gameReset" }],
       }
-    })
-
-    return {
-      state: next,
-      lastDecisionKey: key,
-      effects: [{ type: "decisionRequired", state: structuredClone(next) }],
     }
-  }
 
-  // Unhandled message type — pass state through unchanged
-  return { state, lastDecisionKey, effects: [] }
+    // Apply game state diff and emit stateUpdated
+    if (msg.type === "GREMessageType_GameStateMessage") {
+      const {
+        state: next,
+        lastDecisionKey: nextKey,
+        effects,
+      } = applyDiff(state, msg.gameStateMessage, lastDecisionKey)
+      if (!effects.find((effect) => effect.type === "gameReset") && next !== state) {
+        effects.push({ type: "stateUpdated", state: structuredClone(next) })
+      }
+      return { state: next, lastDecisionKey: nextKey, effects }
+    }
+
+    // Decision messages - deduplicates by gameStateId + decision type
+    const decision = buildDecision(msg, state)
+    if (decision) {
+      const key = `${msg.gameStateId}:${decision.type}`
+      if (key === lastDecisionKey) {
+        return { state, lastDecisionKey, effects: [] }
+      }
+
+      const next = produce(state, (draft) => {
+        draft.pendingDecision = decision
+        if (decision.type === "ActionsAvailable") {
+          draft.availableActions = decision.actions
+        } else {
+          draft.availableActions = []
+        }
+      })
+
+      return {
+        state: next,
+        lastDecisionKey: key,
+        effects: [{ type: "decisionRequired", state: structuredClone(next) }],
+      }
+    }
+
+    return { state, lastDecisionKey, effects: [] }
+  }
 }

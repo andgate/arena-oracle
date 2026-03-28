@@ -8,6 +8,8 @@ import { CoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotSer
 import { ICoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotService.interface"
 import { CoachingSnapshotTransform } from "./coaching-snapshot/CoachingSnapshotTransform"
 import { ICoachingSnapshotTransform } from "./coaching-snapshot/CoachingSnapshotTransform.interface"
+import { GameStateReducer } from "./game-state/GameStateReducer"
+import { IGameStateReducer } from "./game-state/GameStateReducer.interface"
 import { GameStateService } from "./game-state/GameStateService"
 import { IGameStateService } from "./game-state/GameStateService.interface"
 import { IStartable, IStoppable } from "./lifecycle"
@@ -22,6 +24,7 @@ container.register(IPlayerLogWatchService, { useToken: PlayerLogWatchService })
 container.register(IPlayerLogParserService, {
   useToken: PlayerLogParserService,
 })
+container.register(IGameStateReducer, { useToken: GameStateReducer })
 container.register(IGameStateService, { useToken: GameStateService })
 container.register(ICardDbService, { useToken: CardDbService })
 container.register(ICoachingSnapshotTransform, {
