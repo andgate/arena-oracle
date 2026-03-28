@@ -1,4 +1,4 @@
-import type { TGREMessage } from "@shared/gre-types"
+import type { TGREMessage } from "@shared/gre/gre-types"
 import { BehaviorSubject, Subject, Subscription } from "rxjs"
 import { inject, injectable, singleton } from "tsyringe"
 import { IStoppable } from "../lifecycle"

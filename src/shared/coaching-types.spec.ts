@@ -8,7 +8,7 @@ import {
   makeStackEntry,
 } from "./coaching-types"
 import type { GameState } from "./game-state-types"
-import type { TGameObject } from "./gre-types"
+import type { TGameObject } from "./gre/gre-types"
 
 // ============================================================
 // Shared fixtures

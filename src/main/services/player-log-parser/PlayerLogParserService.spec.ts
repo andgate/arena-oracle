@@ -1,7 +1,7 @@
 // src/main/services/player-log-parser/PlayerLogParserService.spec.ts
 
-import * as greTypes from "@shared/gre-types"
-import { TGreToClientEvent } from "@shared/gre-types"
+import * as greParser from "@shared/gre/gre-parser"
+import { TGreToClientEvent } from "@shared/gre/gre-types"
 import { Subject } from "rxjs"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { IPlayerLogWatchService } from "../player-log-watch/PlayerLogWatchService.interface"
@@ -11,12 +11,12 @@ import { PlayerLogParserService } from "./PlayerLogParserService"
 // Mock parseLogLine at the module level
 // ---------------------------------------------------------------------------
 
-vi.mock("@shared/gre-types", async (importOriginal) => {
-  const actual = await importOriginal<typeof greTypes>()
+vi.mock("@shared/gre/gre-parser", async (importOriginal) => {
+  const actual = await importOriginal<typeof greParser>()
   return { ...actual, parseLogLine: vi.fn() }
 })
 
-const mockParseLogLine = vi.mocked(greTypes.parseLogLine)
+const mockParseLogLine = vi.mocked(greParser.parseLogLine)
 
 // ---------------------------------------------------------------------------
 // Fixtures

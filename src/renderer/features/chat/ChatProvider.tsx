@@ -252,7 +252,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     INITIAL_SYSTEM_MESSAGE,
   ])
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState<ChatModel>("groq")
+  const [model, setModel] = useState<ChatModel>("free")
 
   // Use a ref so the snapshot handler always sees the latest messages
   // without needing to be re-registered

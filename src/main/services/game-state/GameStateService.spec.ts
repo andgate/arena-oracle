@@ -1,4 +1,4 @@
-import { TGreToClientEvent, TGREMessage } from "@shared/gre-types"
+import { TGREMessage, TGreToClientEvent } from "@shared/gre/gre-types"
 import { Subject, firstValueFrom } from "rxjs"
 import { skip, take } from "rxjs/operators"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
@@ -82,7 +82,9 @@ describe("GameStateService", () => {
   })
 
   it("emits on stateUpdated$ after a valid GameStateMessage event", async () => {
-    const nextState = firstValueFrom(service.stateUpdated$.pipe(skip(1), take(1)))
+    const nextState = firstValueFrom(
+      service.stateUpdated$.pipe(skip(1), take(1)),
+    )
 
     parserService.subject.next(makeEvent([gameStateMsg([1], 1)]))
 
@@ -115,7 +117,9 @@ describe("GameStateService", () => {
   })
 
   it("populates localPlayerSeatId from the first message received", async () => {
-    const nextState = firstValueFrom(service.stateUpdated$.pipe(skip(1), take(1)))
+    const nextState = firstValueFrom(
+      service.stateUpdated$.pipe(skip(1), take(1)),
+    )
 
     parserService.subject.next(makeEvent([gameStateMsg([7], 1)]))
 
@@ -126,7 +130,9 @@ describe("GameStateService", () => {
   })
 
   it("does not populate localPlayerSeatId from an empty systemSeatIds array", async () => {
-    const nextState = firstValueFrom(service.stateUpdated$.pipe(skip(1), take(1)))
+    const nextState = firstValueFrom(
+      service.stateUpdated$.pipe(skip(1), take(1)),
+    )
 
     parserService.subject.next(
       makeEvent([gameStateMsg([], 1), gameStateMsg([9], 2)]),

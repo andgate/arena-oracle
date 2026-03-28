@@ -1,5 +1,5 @@
 import { GameState } from "@shared/game-state-types"
-import { TGREMessage, TGameObject } from "@shared/gre-types"
+import { TGREMessage, TGameObject } from "@shared/gre/gre-types"
 import { describe, expect, it } from "vitest"
 import { Effect, initialGameState, reduceMessage } from "./GameStateReducer"
 
@@ -532,7 +532,9 @@ describe("reduceMessage - buildDecision", () => {
       gameStateId: 2,
       groupReq: {
         instanceIds: [1, 2],
-        groupSpecs: [{ zoneType: "ZoneType_Hand", lowerBound: 1, upperBound: 1 }],
+        groupSpecs: [
+          { zoneType: "ZoneType_Hand", lowerBound: 1, upperBound: 1 },
+        ],
         groupType: "GroupType_Ordered",
         context: "GroupingContext_Other",
       },
