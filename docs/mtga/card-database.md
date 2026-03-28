@@ -80,6 +80,7 @@ Ability text uses two placeholder conventions that need decoding:
 
 - `CARDNAME` — replace with the card's name
 - Mana symbols encoded as `{oX}` e.g. `{oT}` = tap, `{o1}` = `{1}`, `{oW}` = `{W}`
+  - Important: this is a different encoding format from `Cards.OldSchoolManaText`. Ability text already includes braces around mana placeholders, so decode `{oX}` tokens in-place rather than splitting on raw `o` characters.
 
 ### `Enums`
 
@@ -153,7 +154,7 @@ Maps alternate art and reprint `GrpId` values back to their base card. Useful if
 | `oT`    | `{T}` (tap, appears in ability text) |
 | `oC`    | `{C}` (colorless)                    |
 
-Decode by splitting on `o`, filtering empty strings, and wrapping each token in `{}`.
+Decode by splitting on `o`, filtering empty strings, and wrapping each token in `{}`. Do not reuse this decoding logic for ability text. `OldSchoolManaText` is raw `o`-delimited data like `o2oGoG`, while ability text uses already-braced placeholders like `{oT}`.
 
 ## Recommended Query
 

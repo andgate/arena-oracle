@@ -28,8 +28,17 @@ git lfs install
 git clone <repo-url>
 cd <repo-dir>
 pnpm install
+pnpm approve-builds
+pnpm install
 cp .env.template .env
 ```
+
+When `pnpm approve-builds` opens, approve build scripts for:
+
+- `better-sqlite3`
+- `esbuild`
+
+This only needs to be done when `pnpm` reports ignored build scripts or when a new script-running dependency is introduced.
 
 Set the values in `.env` as needed:
 
@@ -51,6 +60,12 @@ pnpm check
 pnpm lint
 pnpm test
 pnpm test:e2e
+```
+
+If native dependencies were previously installed without approved build scripts, repair them with:
+
+```bash
+pnpm rebuild better-sqlite3
 ```
 
 ## Project notes
