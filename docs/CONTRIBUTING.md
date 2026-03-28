@@ -6,6 +6,25 @@ This document describes the development workflow for contributing to this projec
 
 All changes are made on feature branches and merged into `master` via pull request. Direct pushes to `master` are not allowed. CI must pass before a PR can be merged.
 
+## Local setup
+
+This project uses Git LFS for committed database fixtures. Install and enable it before cloning, pulling, or switching branches:
+
+```bash
+git lfs install
+```
+
+Recommended first-time setup:
+
+```bash
+git clone <repo-url>
+cd <repo-dir>
+git lfs pull
+pnpm install
+```
+
+If you already cloned the repo before installing Git LFS, run `git lfs pull` after `git lfs install` to fetch any LFS-backed assets.
+
 ## Linear & GitHub Integration
 
 Linear and GitHub are integrated. Linear will automatically transition issue statuses based on branch and PR activity:
@@ -45,7 +64,7 @@ git checkout -b goo-123-my-issue-title
 
 Keep commits focused. Use the following commit message format:
 
-```
+```text
 fix GOO-123 short description of what changed
 ```
 
@@ -70,9 +89,9 @@ Once CI is green, squash and merge the PR. The issue will automatically be moved
 
 The following checks run on every PR:
 
-- **Type check** — `pnpm check`
-- **Lint** — `pnpm lint`
-- **Tests with coverage** — `pnpm test:ci`
+- **Type check** - `pnpm check`
+- **Lint** - `pnpm lint`
+- **Tests with coverage** - `pnpm test:ci`
 
 All checks must pass before merging.
 

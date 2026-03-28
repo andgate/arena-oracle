@@ -1,8 +1,8 @@
 {
-  "name": "mtga-tracker",
-  "productName": "mtga-tracker",
+  "name": "arena-oracle",
+  "productName": "Arena Oracle",
   "version": "1.0.0",
-  "description": "Magic the Gathering Arena Game State Tracker",
+  "description": "AI coaching assistant for Magic: The Gathering Arena",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
