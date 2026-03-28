@@ -50,6 +50,21 @@ function findMtgaRawDataPath(): string | null {
   return null
 }
 
+export function getCardDbFile(): string | null {
+  const cardDbPath = getMtgaRawDataPath()
+  if (!cardDbPath) return null
+
+  if (fs.statSync(cardDbPath).isFile()) return cardDbPath
+
+  const files = fs.readdirSync(cardDbPath)
+  const dbFile = files.find(
+    (f) => f.startsWith("Raw_CardDatabase_") && f.endsWith(".mtga"),
+  )
+  if (!dbFile) return null
+
+  return path.join(cardDbPath, dbFile)
+}
+
 export function getMtgaPlayerLogPath(): string {
   const injected = process.env.MTGA_PLAYER_LOG_PATH
   if (injected) return injected

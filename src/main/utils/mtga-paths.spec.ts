@@ -1,4 +1,5 @@
 import {
+  getCardDbFile,
   getMtgaPlayerLogPath,
   getMtgaRawDataPath,
 } from "@main/utils/mtga-paths"
@@ -8,11 +9,19 @@ import fs from "fs"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("child_process", () => ({ execSync: vi.fn() }))
-vi.mock("fs", () => ({ default: { existsSync: vi.fn() } }))
+vi.mock("fs", () => ({
+  default: {
+    existsSync: vi.fn(),
+    readdirSync: vi.fn(),
+    statSync: vi.fn(),
+  },
+}))
 vi.mock("electron", () => ({ app: { getPath: vi.fn() } }))
 
 const mockExecSync = vi.mocked(execSync)
 const mockExistsSync = vi.mocked(fs.existsSync)
+const mockReaddirSync = vi.mocked(fs.readdirSync)
+const mockStatSync = vi.mocked(fs.statSync)
 const mockGetPath = vi.mocked(app.getPath)
 
 describe("getMtgaPlayerLogPath", () => {
@@ -151,5 +160,60 @@ describe("getMtgaRawDataPath", () => {
     mockExistsSync.mockReturnValue(false)
 
     expect(getMtgaRawDataPath()).toBeNull()
+  })
+})
+
+describe("getCardDbFile", () => {
+  const ORIGINAL_ENV = process.env
+
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV }
+    vi.resetAllMocks()
+    mockStatSync.mockReturnValue({
+      isFile: () => false,
+    } as fs.Stats)
+  })
+
+  afterEach(() => {
+    process.env = ORIGINAL_ENV
+  })
+
+  it("returns null when the raw data path cannot be resolved", () => {
+    delete process.env.MTGA_RAW_DATA_PATH
+    mockExecSync.mockImplementation(() => {
+      throw new Error("no steam")
+    })
+    mockExistsSync.mockReturnValue(false)
+
+    expect(getCardDbFile()).toBeNull()
+  })
+
+  it("returns the injected path directly when it already points at a file", () => {
+    process.env.MTGA_RAW_DATA_PATH = "C:\\custom\\raw\\Raw_CardDatabase_test.mtga"
+    mockStatSync.mockReturnValue({
+      isFile: () => true,
+    } as fs.Stats)
+
+    expect(getCardDbFile()).toBe("C:\\custom\\raw\\Raw_CardDatabase_test.mtga")
+    expect(mockReaddirSync).not.toHaveBeenCalled()
+  })
+
+  it("returns the matching DB file from an injected raw-data directory", () => {
+    process.env.MTGA_RAW_DATA_PATH = "C:\\custom\\raw\\data"
+    mockReaddirSync.mockReturnValue([
+      "notes.txt",
+      "Raw_CardDatabase_test.mtga",
+    ] as any)
+
+    expect(getCardDbFile()).toBe(
+      "C:\\custom\\raw\\data\\Raw_CardDatabase_test.mtga",
+    )
+  })
+
+  it("returns null when the raw-data directory contains no matching DB file", () => {
+    process.env.MTGA_RAW_DATA_PATH = "C:\\custom\\raw\\data"
+    mockReaddirSync.mockReturnValue(["notes.txt"] as any)
+
+    expect(getCardDbFile()).toBeNull()
   })
 })

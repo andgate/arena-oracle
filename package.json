@@ -13,7 +13,7 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
+    "test:cov": "vitest --coverage",
     "test:ci": "vitest --run --coverage",
     "pretest:e2e": "electron-forge package",
     "test:e2e": "playwright test",
@@ -28,8 +28,13 @@
   "license": "ISC",
   "pnpm": {
     "onlyBuiltDependencies": [
+      "better-sqlite3",
       "electron",
       "electron-winstaller"
+    ],
+    "ignoredBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild"
     ]
   },
   "dependencies": {
@@ -63,8 +68,8 @@
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-react": "^5.1.2",
-    "@vitest/coverage-v8": "^4.0.16",
-    "@vitest/ui": "^4.0.16",
+    "@vitest/coverage-v8": "4.0.16",
+    "@vitest/ui": "4.0.16",
     "electron": "39.2.6",
     "eslint": "^9.39.1",
     "eslint-plugin-import": "^2.25.0",
@@ -76,6 +81,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^5.0.12",
-    "vitest": "^4.0.16"
+    "vitest": "4.0.16"
   }
 }

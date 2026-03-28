@@ -1,8 +1,6 @@
-import { getMtgaRawDataPath } from "@main/utils/mtga-paths"
+import { getCardDbFile } from "@main/utils/mtga-paths"
 import { AbilityText, ResolvedCard } from "@shared/card-types"
 import Database from "better-sqlite3"
-import fs from "fs"
-import path from "path"
 import { injectable, singleton } from "tsyringe"
 import { IStartable, IStoppable } from "../lifecycle"
 import { ICardDbService } from "./CardDbService.interface"
@@ -44,6 +42,16 @@ function decodeManaText(raw: string): string {
     .join("")
 }
 
+function decodeAbilityText(raw: string, cardName: string): string {
+  if (!raw) return ""
+
+  return raw
+    .replaceAll("CARDNAME", cardName)
+    .replace(/\{o([0-9WUBRGCTXSQEP]+)\}/gi, (_, symbol: string) => {
+      return `{${symbol.toUpperCase()}}`
+    })
+}
+
 @injectable()
 @singleton()
 export class CardDbService implements ICardDbService, IStartable, IStoppable {
@@ -59,22 +67,12 @@ export class CardDbService implements ICardDbService, IStartable, IStoppable {
   // ============================================================
 
   start() {
-    const cardDbPath = getMtgaRawDataPath()
-    if (!cardDbPath) {
+    const dbPath = getCardDbFile()
+    if (!dbPath) {
       console.error("Could not find path for Raw_CardDatabase_*.mtga")
       return
     }
 
-    const files = fs.readdirSync(cardDbPath)
-    const dbFile = files.find(
-      (f) => f.startsWith("Raw_CardDatabase_") && f.endsWith(".mtga"),
-    )
-    if (!dbFile) {
-      console.error("Could not find Raw_CardDatabase_*.mtga in", cardDbPath)
-      return
-    }
-
-    const dbPath = path.join(cardDbPath, dbFile)
     this.cardDb = new Database(dbPath, { readonly: true })
     this.cardCache = new Map()
   }
@@ -128,11 +126,11 @@ export class CardDbService implements ICardDbService, IStartable, IStoppable {
             .map((c: string) => COLOR_MAP[c.trim()] ?? c)
             .filter(Boolean)
         : [],
-      power: row.Power,
-      toughness: row.Toughness,
+      power: row.Power ?? "",
+      toughness: row.Toughness ?? "",
       rarity: RARITY_MAP[row.Rarity] ?? "Unknown",
       set: row.ExpansionCode ?? "",
-      abilities: this.resolveAbilities(row.AbilityIds, this.cardDb!),
+      abilities: this.resolveAbilities(row.AbilityIds, row.Name, this.cardDb!),
     }
 
     this.cardCache.set(grpId, resolved)
@@ -149,13 +147,14 @@ export class CardDbService implements ICardDbService, IStartable, IStoppable {
 
   private resolveAbilities(
     abilityIds: string,
+    cardName: string,
     db: Database.Database,
   ): AbilityText[] {
     if (!abilityIds) return []
     return abilityIds
       .split(",")
-      .map((id) => {
-        const numId = parseInt(id.trim())
+      .map((abilityRef) => {
+        const numId = parseInt(abilityRef.trim().split(":")[0], 10)
         const row = db
           .prepare(
             `
@@ -170,14 +169,7 @@ export class CardDbService implements ICardDbService, IStartable, IStoppable {
 
         if (!row) return null
 
-        // Decode mana symbols in ability text
-        const text = row.Loc.split("o").reduce((acc, part, i) => {
-          if (i === 0) return part
-          // First char(s) up to a lowercase letter are the mana symbol
-          const match = part.match(/^([0-9WUBRGCTXSQEP]+)(.*)$/i)
-          if (match) return acc + `{${match[1].toUpperCase()}}` + match[2]
-          return acc + part
-        }, "")
+        const text = decodeAbilityText(row.Loc, cardName)
 
         return { id: row.Id, text }
       })
