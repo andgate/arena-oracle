@@ -107,6 +107,7 @@ The following checks run on every PR:
 - **Type check** - `pnpm check`
 - **Lint** - `pnpm lint`
 - **Tests with coverage** - `pnpm test:ci`
+- **E2E tests** - `pnpm test:e2e`
 
 All checks must pass before merging.
 
