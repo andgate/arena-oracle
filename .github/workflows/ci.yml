@@ -1,73 +1,58 @@
-# .github/workflows/ci.yml
-name: CI/CD
+name: CI
 
 on:
   push:
-    tags: ['v*']
+    branches: [master]
   pull_request:
     branches: [master]
 
 jobs:
-  ci:
-    name: Test & Lint
+  validation:
+    name: validation
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           lfs: true
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: latest
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Type check
+      - name: Typecheck
         run: pnpm check
 
       - name: Lint
         run: pnpm lint
 
-      - name: Test with coverage
+      - name: Unit Tests
         run: pnpm test:ci
 
-      - name: Upload coverage report
+      - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/
 
-  release:
-    name: Publish Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: ci
-    runs-on: windows-latest
+      - name: Run E2E Tests
+        run: pnpm test:e2e
 
-    steps:
-      - uses: actions/checkout@v4
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
-          lfs: true
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Publish
-        run: pnpm publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

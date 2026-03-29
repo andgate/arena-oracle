@@ -1,4 +1,5 @@
 import { MakerSquirrel } from "@electron-forge/maker-squirrel"
+import { PublisherGithub } from "@electron-forge/publisher-github"
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives"
 import { FusesPlugin } from "@electron-forge/plugin-fuses"
 import { VitePlugin } from "@electron-forge/plugin-vite"
@@ -11,6 +12,14 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({})],
+  publishers: [
+    new PublisherGithub({
+      repository: {
+        owner: "andgate",
+        name: "arena-oracle",
+      },
+    }),
+  ],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new VitePlugin({
