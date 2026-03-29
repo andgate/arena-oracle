@@ -365,6 +365,215 @@ describe("CoachingSnapshotTransform", () => {
       const snapshot = transform.buildSnapshot(stateWithZones())!
       expect(snapshot.opponent.revealed).toHaveLength(1)
     })
+
+    it("filters battlefield, hand, graveyard, exile, and revealed cards when objects or card lookups are missing", () => {
+      const knownCard = makeResolvedCard({ grpId: 1, name: "Llanowar Elves" })
+      const transform = new CoachingSnapshotTransform(makeCardDb({ 1: knownCard }))
+
+      const battlefieldId = nextZoneId()
+      const localHandId = nextZoneId()
+      const opponentHandId = nextZoneId()
+      const localGraveyardId = nextZoneId()
+      const oppGraveyardId = nextZoneId()
+      const localExileId = nextZoneId()
+      const oppExileId = nextZoneId()
+      const localRevealedId = nextZoneId()
+      const oppRevealedId = nextZoneId()
+      const localLibraryId = nextZoneId()
+      const opponentLibraryId = nextZoneId()
+
+      const state = makeGameState({
+        gameObjects: {
+          101: makeGameObject({
+            instanceId: 101,
+            grpId: 1,
+            controllerSeatId: 1,
+            ownerSeatId: 1,
+          }),
+          201: makeGameObject({
+            instanceId: 201,
+            grpId: 999,
+            controllerSeatId: 2,
+            ownerSeatId: 2,
+          }),
+        },
+        zones: {
+          [battlefieldId]: makeZone({
+            zoneId: battlefieldId,
+            type: "ZoneType_Battlefield",
+            objectInstanceIds: [101, 201, 9999],
+          }),
+          [localHandId]: makeZone({
+            zoneId: localHandId,
+            type: "ZoneType_Hand",
+            visibility: "Visibility_Private",
+            ownerSeatId: 1,
+            objectInstanceIds: [101, 9999],
+          }),
+          [opponentHandId]: makeZone({
+            zoneId: opponentHandId,
+            type: "ZoneType_Hand",
+            visibility: "Visibility_Private",
+            ownerSeatId: 2,
+            objectInstanceIds: [201, 9999],
+          }),
+          [localGraveyardId]: makeZone({
+            zoneId: localGraveyardId,
+            type: "ZoneType_Graveyard",
+            ownerSeatId: 1,
+            objectInstanceIds: [101, 9999],
+          }),
+          [oppGraveyardId]: makeZone({
+            zoneId: oppGraveyardId,
+            type: "ZoneType_Graveyard",
+            ownerSeatId: 2,
+            objectInstanceIds: [201, 9999],
+          }),
+          [localExileId]: makeZone({
+            zoneId: localExileId,
+            type: "ZoneType_Exile",
+            ownerSeatId: 1,
+            objectInstanceIds: [101, 9999],
+          }),
+          [oppExileId]: makeZone({
+            zoneId: oppExileId,
+            type: "ZoneType_Exile",
+            ownerSeatId: 2,
+            objectInstanceIds: [201, 9999],
+          }),
+          [localRevealedId]: makeZone({
+            zoneId: localRevealedId,
+            type: "ZoneType_Revealed",
+            ownerSeatId: 1,
+            objectInstanceIds: [101, 9999],
+          }),
+          [oppRevealedId]: makeZone({
+            zoneId: oppRevealedId,
+            type: "ZoneType_Revealed",
+            ownerSeatId: 2,
+            objectInstanceIds: [201, 9999],
+          }),
+          [localLibraryId]: makeZone({
+            zoneId: localLibraryId,
+            type: "ZoneType_Library",
+            ownerSeatId: 1,
+            objectInstanceIds: [500, 501],
+          }),
+          [opponentLibraryId]: makeZone({
+            zoneId: opponentLibraryId,
+            type: "ZoneType_Library",
+            ownerSeatId: 2,
+            objectInstanceIds: [600],
+          }),
+        },
+        pendingDecision: { type: "ActionsAvailable", actions: [] },
+      })
+
+      const snapshot = transform.buildSnapshot(state)!
+      expect(snapshot.localPlayer.battlefield).toHaveLength(1)
+      expect(snapshot.opponent.battlefield).toEqual([])
+      expect(snapshot.localPlayer.hand).toHaveLength(1)
+      expect(snapshot.localPlayer.graveyard).toHaveLength(1)
+      expect(snapshot.localPlayer.exile).toHaveLength(1)
+      expect(snapshot.localPlayer.revealed).toHaveLength(1)
+      expect(snapshot.opponent.graveyard).toEqual([])
+      expect(snapshot.opponent.exile).toEqual([])
+      expect(snapshot.opponent.revealed).toEqual([])
+      expect(snapshot.opponent.handSize).toBe(2)
+      expect(snapshot.localPlayer.librarySize).toBe(2)
+      expect(snapshot.opponent.librarySize).toBe(1)
+    })
+
+    it("uses seatId fallback when systemSeatNumber is absent", () => {
+      const transform = new CoachingSnapshotTransform(makeCardDb({ 1: card }))
+      const battlefieldId = nextZoneId()
+
+      const state = makeGameState({
+        players: {
+          1: makePlayerState(1, { systemSeatNumber: undefined, seatId: 1 }),
+          2: makePlayerState(2, {
+            systemSeatNumber: undefined,
+            seatId: 2,
+            lifeTotal: 17,
+          }),
+        },
+        gameObjects: {
+          101: makeGameObject({
+            instanceId: 101,
+            grpId: 1,
+            controllerSeatId: 1,
+            ownerSeatId: 1,
+          }),
+        },
+        zones: {
+          [battlefieldId]: makeZone({
+            zoneId: battlefieldId,
+            type: "ZoneType_Battlefield",
+            objectInstanceIds: [101],
+          }),
+        },
+        pendingDecision: { type: "ActionsAvailable", actions: [] },
+      })
+
+      const snapshot = transform.buildSnapshot(state)!
+      expect(snapshot.opponent.lifeTotal).toBe(17)
+    })
+
+    it("defaults life totals, turn metadata, and player zones when turnInfo and players are partial", () => {
+      const transform = new CoachingSnapshotTransform(makeCardDb())
+      const state = makeGameState({
+        turnInfo: null,
+        players: {
+          1: makePlayerState(1, { lifeTotal: undefined as never }),
+          2: makePlayerState(2, { lifeTotal: undefined as never }),
+        },
+        pendingDecision: {
+          type: "Mulligan",
+          mulliganCount: 0,
+          handInstanceIds: [],
+        },
+      })
+
+      const snapshot = transform.buildSnapshot(state)!
+      expect(snapshot.turnNumber).toBe(0)
+      expect(snapshot.phase).toBe("Phase_Beginning")
+      expect(snapshot.step).toBeNull()
+      expect(snapshot.isLocalPlayerTurn).toBe(false)
+      expect(snapshot.localPlayer.lifeTotal).toBe(20)
+      expect(snapshot.opponent.lifeTotal).toBe(20)
+      expect(snapshot.localPlayer.librarySize).toBe(0)
+      expect(snapshot.opponent.librarySize).toBe(0)
+    })
+
+    it("filters local hand cards when the game object exists but the card lookup is missing", () => {
+      const transform = new CoachingSnapshotTransform(makeCardDb({ 1: card }))
+      const localHandId = nextZoneId()
+
+      const state = makeGameState({
+        gameObjects: {
+          101: makeGameObject({
+            instanceId: 101,
+            grpId: 999,
+            ownerSeatId: 1,
+            controllerSeatId: 1,
+          }),
+        },
+        zones: {
+          [localHandId]: makeZone({
+            zoneId: localHandId,
+            type: "ZoneType_Hand",
+            visibility: "Visibility_Private",
+            ownerSeatId: 1,
+            objectInstanceIds: [101],
+          }),
+        },
+        pendingDecision: { type: "ActionsAvailable", actions: [] },
+      })
+
+      const snapshot = transform.buildSnapshot(state)!
+      expect(snapshot.localPlayer.hand).toEqual([])
+      expect(snapshot.localPlayer.handSize).toBe(0)
+    })
   })
 
   // ── buildSnapshot stack ────────────────────────────────────────────────────
@@ -401,6 +610,54 @@ describe("CoachingSnapshotTransform", () => {
       const snapshot = transform.buildSnapshot(state)!
       expect(snapshot.stack).toHaveLength(1)
       expect(snapshot.stack[0].name).toBe("Llanowar Elves")
+    })
+
+    it("filters stack entries when the object or card lookup is missing and falls back to grpId for non-ability objects", () => {
+      const sourceCard = makeResolvedCard({ grpId: 2, name: "Grizzly Bears" })
+      const transform = new CoachingSnapshotTransform(makeCardDb({ 2: sourceCard }))
+
+      const stackZoneId = nextZoneId()
+      const state = makeGameState({
+        gameObjects: {
+          301: makeGameObject({
+            instanceId: 301,
+            grpId: 2,
+            controllerSeatId: 2,
+          }),
+          302: makeGameObject({
+            instanceId: 302,
+            grpId: 999,
+            controllerSeatId: 2,
+          }),
+        },
+        zones: {
+          [stackZoneId]: makeZone({
+            zoneId: stackZoneId,
+            type: "ZoneType_Stack",
+            objectInstanceIds: [301, 302, 9999],
+          }),
+        },
+        stack: [301, 302, 9999],
+        pendingDecision: { type: "ActionsAvailable", actions: [] },
+      })
+
+      const snapshot = transform.buildSnapshot(state)!
+      expect(snapshot.stack).toHaveLength(1)
+      expect(snapshot.stack[0]).toMatchObject({
+        name: "Grizzly Bears",
+        controlledByLocalPlayer: false,
+      })
+    })
+
+    it("treats a null stack as an empty stack", () => {
+      const transform = new CoachingSnapshotTransform(makeCardDb())
+      const state = makeGameState({
+        stack: null as unknown as number[],
+        pendingDecision: { type: "ActionsAvailable", actions: [] },
+      })
+
+      const snapshot = transform.buildSnapshot(state)!
+      expect(snapshot.stack).toEqual([])
     })
   })
 
@@ -565,6 +822,82 @@ describe("CoachingSnapshotTransform", () => {
       expect(decision.actions).toContain("Pass priority")
     })
 
+    it("ActionsAvailable — maps activate ability action to string", () => {
+      const state = stateWithDecision({
+        type: "ActionsAvailable",
+        actions: [
+          { actionType: "ActionType_Activate", instanceId: 101, grpId: 1 },
+        ],
+      })
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "ActionsAvailable") return
+      expect(
+        decision.actions.some(
+          (a) => a.includes("Activate ability") && a.includes("Llanowar Elves"),
+        ),
+      ).toBe(true)
+    })
+
+    it("ActionsAvailable — falls back to actionType string for unrecognized action types", () => {
+      const state = makeGameState({
+        gameObjects: {},
+        pendingDecision: {
+          type: "ActionsAvailable",
+          actions: [{ actionType: "ActionType_Unknown_XYZ" as any }] as any,
+        },
+      })
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "ActionsAvailable") return
+      expect(decision.actions).toContain("ActionType_Unknown_XYZ")
+    })
+
+    it("ActionsAvailable — falls back for unknown cards, missing instanceIds, and single mana action strings", () => {
+      vi.mocked(greFormatting.getManaColorString).mockReturnValue("{U}")
+
+      const state = makeGameState({
+        gameObjects: {
+          101: makeGameObject({
+            instanceId: 101,
+            grpId: 999,
+          }),
+        },
+        pendingDecision: {
+          type: "ActionsAvailable",
+          actions: [
+            { actionType: "ActionType_Play", instanceId: 101, grpId: 999 },
+            { actionType: "ActionType_Activate", instanceId: 555, grpId: 999 },
+            { actionType: "ActionType_Activate_Mana", manaSelections: [] },
+          ],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "ActionsAvailable") return
+      expect(decision.actions).toContain("Play land: Unknown (instance 101)")
+      expect(decision.actions).toContain("Activate ability: Unknown (instance 555)")
+      expect(
+        decision.actions.some(
+          (action) =>
+            action.includes("Tap Unknown (grpId -1) for mana") &&
+            action.includes("{U}"),
+        ),
+      ).toBe(true)
+    })
+
+    it("ActionsAvailable — formats cast actions with an empty mana cost when manaCost is omitted", () => {
+      vi.mocked(greFormatting.formatManaCost).mockReturnValue("")
+
+      const state = stateWithDecision({
+        type: "ActionsAvailable",
+        actions: [{ actionType: "ActionType_Cast", instanceId: 101, grpId: 1 }],
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "ActionsAvailable") return
+      expect(greFormatting.formatManaCost).toHaveBeenCalledWith([])
+      expect(decision.actions).toContain("Cast Llanowar Elves ")
+    })
+
     // ── DeclareAttackers ──
 
     it("DeclareAttackers — maps eligible attackers with name, power, toughness", () => {
@@ -605,6 +938,26 @@ describe("CoachingSnapshotTransform", () => {
       expect(decision.eligibleAttackers[0].toughness).toBe("3")
     })
 
+    it("DeclareAttackers — falls back to unknown name, '?' stats, and untapped=false default", () => {
+      const state = makeGameState({
+        gameObjects: {},
+        pendingDecision: {
+          type: "DeclareAttackers",
+          eligibleAttackers: [{ attackerInstanceId: 404 }],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "DeclareAttackers") return
+      expect(decision.eligibleAttackers[0]).toMatchObject({
+        instanceId: 404,
+        name: "Unknown (instance 404)",
+        power: "?",
+        toughness: "?",
+        isTapped: false,
+      })
+    })
+
     // ── DeclareBlockers ──
 
     it("DeclareBlockers — maps blockers with nested attacker list", () => {
@@ -623,6 +976,33 @@ describe("CoachingSnapshotTransform", () => {
       expect(decision.eligibleBlockers[0].attackers[0].name).toBe(
         "Grizzly Bears",
       )
+    })
+
+    it("DeclareBlockers — falls back for unknown blocker and attacker objects", () => {
+      const state = makeGameState({
+        gameObjects: {},
+        pendingDecision: {
+          type: "DeclareBlockers",
+          eligibleBlockers: [
+            { blockerInstanceId: 404, attackerInstanceIds: [405] },
+          ],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "DeclareBlockers") return
+      expect(decision.eligibleBlockers[0]).toMatchObject({
+        instanceId: 404,
+        name: "Unknown (instance 404)",
+        power: "?",
+        toughness: "?",
+      })
+      expect(decision.eligibleBlockers[0].attackers[0]).toMatchObject({
+        instanceId: 405,
+        name: "Unknown (instance 405)",
+        power: "?",
+        toughness: "?",
+      })
     })
 
     // ── SelectTargets ──
@@ -654,6 +1034,39 @@ describe("CoachingSnapshotTransform", () => {
       expect(decision.targetSlots[0].options[0].name).toBe("Grizzly Bears")
     })
 
+    it("SelectTargets — uses default min/max and unknown source or target fallbacks", () => {
+      const state = makeGameState({
+        gameObjects: {},
+        pendingDecision: {
+          type: "SelectTargets",
+          sourceId: undefined,
+          abilityGrpId: undefined,
+          targetSlots: [
+            {
+              targetIdx: 0,
+              targets: [{ targetInstanceId: undefined }],
+            },
+            {
+              targetIdx: 1,
+            },
+          ],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "SelectTargets") return
+      expect(decision.sourceName).toBe("Unknown (grpId undefined)")
+      expect(decision.targetSlots[0]).toMatchObject({
+        minTargets: 1,
+        maxTargets: 1,
+      })
+      expect(decision.targetSlots[0].options[0]).toMatchObject({
+        instanceId: -1,
+        name: "Unknown (instance undefined)",
+      })
+      expect(decision.targetSlots[1].options).toEqual([])
+    })
+
     // ── PayCosts ──
 
     it("PayCosts — formats mana cost and maps payment option names", () => {
@@ -672,6 +1085,21 @@ describe("CoachingSnapshotTransform", () => {
       expect(greFormatting.formatManaCost).toHaveBeenCalledWith(manaCost)
       expect(decision.cost).toBe("{G}")
       expect(decision.paymentOptions).toContain("Llanowar Elves")
+    })
+
+    it("PayCosts — falls back to unknown payment option names", () => {
+      const state = makeGameState({
+        gameObjects: {},
+        pendingDecision: {
+          type: "PayCosts",
+          manaCost: [],
+          paymentActions: [{ actionType: "ActionType_Activate_Mana" }],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "PayCosts") return
+      expect(decision.paymentOptions).toEqual(["Unknown (instance undefined)"])
     })
 
     // ── AssignDamage ──
@@ -743,6 +1171,42 @@ describe("CoachingSnapshotTransform", () => {
       )
     })
 
+    it("AssignDamage — falls back for unknown attackers and creature targets, and defaults min/max damage", () => {
+      const state = makeGameState({
+        localPlayerSeatId: 2,
+        gameObjects: {},
+        pendingDecision: {
+          type: "AssignDamage",
+          damageAssigners: [
+            {
+              instanceId: 404,
+              totalDamage: 4,
+              assignments: [
+                { instanceId: 1, assignedDamage: 1 },
+                { instanceId: 999, assignedDamage: 3 },
+              ],
+            },
+          ],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "AssignDamage") return
+      expect(decision.damageAssigners[0].attackerName).toBe(
+        "Unknown (instance 404)",
+      )
+      expect(decision.damageAssigners[0].assignments[0]).toMatchObject({
+        targetName: "Opponent",
+        minDamage: 0,
+        maxDamage: 1,
+      })
+      expect(decision.damageAssigners[0].assignments[1]).toMatchObject({
+        targetName: "Unknown (instance 999)",
+        minDamage: 0,
+        maxDamage: 3,
+      })
+    })
+
     // ── Mulligan ──
 
     it("Mulligan — resolves card names from hand instance IDs", () => {
@@ -760,6 +1224,22 @@ describe("CoachingSnapshotTransform", () => {
       if (decision.type !== "Mulligan") return
       expect(decision.mulliganCount).toBe(1)
       expect(decision.cards).toContain("Llanowar Elves")
+    })
+
+    it("Mulligan — falls back to unknown card names", () => {
+      const state = makeGameState({
+        turnInfo: null,
+        gameObjects: {},
+        pendingDecision: {
+          type: "Mulligan",
+          mulliganCount: 2,
+          handInstanceIds: [999],
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "Mulligan") return
+      expect(decision.cards).toEqual(["Unknown (instance 999)"])
     })
 
     // ── LondonMulliganGroup ──
@@ -783,6 +1263,22 @@ describe("CoachingSnapshotTransform", () => {
       expect(decision.keepCount).toBe(6)
       expect(decision.cards).toContain("Llanowar Elves")
       expect(decision.cards).toContain("Grizzly Bears")
+    })
+
+    it("LondonMulliganGroup — falls back to unknown card names", () => {
+      const state = makeGameState({
+        turnInfo: null,
+        gameObjects: {},
+        pendingDecision: {
+          type: "LondonMulliganGroup",
+          instanceIds: [999],
+          keepCount: 5,
+        },
+      })
+
+      const decision = transform.buildSnapshot(state)!.decision
+      if (decision.type !== "LondonMulliganGroup") return
+      expect(decision.cards).toEqual(["Unknown (instance 999)"])
     })
   })
 })

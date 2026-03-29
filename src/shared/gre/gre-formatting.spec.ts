@@ -70,6 +70,13 @@ describe("formatManaCost", () => {
     ] as unknown as TManaCost[]
     expect(formatManaCost(cost)).toBe("{Phyrexian}")
   })
+
+  test("throws when a mana cost entry has no color key", () => {
+    const cost = [{ color: [], count: 1 }] as unknown as TManaCost[]
+    expect(() => formatManaCost(cost)).toThrow(
+      "Cannot read properties of undefined",
+    )
+  })
 })
 
 // ============================================================
@@ -137,5 +144,33 @@ describe("getManaColorString", () => {
       ],
     }
     expect(getManaColorString(action)).toBe("{W} or {U} or {B}")
+  })
+
+  test("falls back gracefully for unknown mana colors in options", () => {
+    const action = {
+      actionType: "ActionType_Activate_Mana",
+      manaSelections: [
+        {
+          instanceId: 1,
+          abilityGrpId: 1,
+          options: [{ mana: [{ color: ["ManaColor_Snow"], count: 1 }] }],
+        },
+      ],
+    } as unknown as TAvailableAction
+    expect(getManaColorString(action)).toBe("{Snow}")
+  })
+
+  test("falls back gracefully when an option has no mana color", () => {
+    const action = {
+      actionType: "ActionType_Activate_Mana",
+      manaSelections: [
+        {
+          instanceId: 1,
+          abilityGrpId: 1,
+          options: [{ mana: [] }],
+        },
+      ],
+    } as unknown as TAvailableAction
+    expect(getManaColorString(action)).toBe("{}")
   })
 })
