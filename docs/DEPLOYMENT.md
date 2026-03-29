@@ -9,9 +9,9 @@ Arena Oracle releases are published through Electron Forge and GitHub Releases.
 2. Bump the version in `package.json`:
 
 ```bash
-npm version patch   # 1.0.0 -> 1.0.1
-npm version minor   # 1.0.0 -> 1.1.0
-npm version major   # 1.0.0 -> 2.0.0
+pnpm version patch   # 0.0.1 -> 0.0.2
+pnpm version minor   # 0.0.1 -> 0.1.0
+pnpm version major   # 0.0.1 -> 1.0.0
 ```
 
 This automatically commits the version bump and creates a local tag.
