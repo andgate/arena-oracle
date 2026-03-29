@@ -1,7 +1,7 @@
 {
   "name": "arena-oracle",
   "productName": "Arena Oracle",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "AI coaching assistant for Magic: The Gathering Arena",
   "main": ".vite/build/main.js",
   "scripts": {
