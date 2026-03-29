@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Build and Publish Windows Release
+    name: release
     runs-on: windows-latest
 
     steps:

@@ -6,7 +6,7 @@ Arena Oracle uses GitHub Actions for CI and Electron Forge for Windows release p
 
 Pushes to `master` and pull requests targeting `master` run two separate workflows:
 
-- CI on `ubuntu-latest` for:
+- Validation on `windows-latest` for:
   - Type checking (`pnpm check`)
   - Linting (`pnpm lint`)
   - Unit tests with coverage (`pnpm test:ci`)

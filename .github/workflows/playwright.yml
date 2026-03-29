@@ -1,4 +1,4 @@
-name: E2E Tests
+name: E2E
 on:
   push:
     branches: [ master ]
@@ -6,6 +6,7 @@ on:
     branches: [ master ]
 jobs:
   e2e:
+    name: tests
     timeout-minutes: 60
     runs-on: windows-latest
     steps:

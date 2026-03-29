@@ -1,4 +1,4 @@
-name: Validation
+name: CI
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 jobs:
   validate:
-    name: Typecheck, Lint, Unit Tests
-    runs-on: ubuntu-latest
+    name: checks
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
