@@ -1,7 +1,7 @@
 {
   "name": "arena-oracle",
   "productName": "Arena Oracle",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "AI coaching assistant for Magic: The Gathering Arena",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -52,11 +52,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.10.2",
-    "@electron-forge/maker-squirrel": "^7.10.2",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
-    "@electron-forge/plugin-fuses": "^7.10.2",
-    "@electron-forge/plugin-vite": "^7.10.2",
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron-forge/plugin-vite": "^7.11.1",
+    "@electron-forge/publisher-github": "^7.11.1",
     "@electron/fuses": "^1.0.0",
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
