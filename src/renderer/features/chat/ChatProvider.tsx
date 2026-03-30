@@ -1,7 +1,16 @@
 import { coachingSnapshot$ } from "@renderer/streams"
 import { CoachingSnapshot } from "@shared/coaching-types"
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { ModelMessage, streamText } from "ai"
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import SYSTEM_PROMPT from "./coaching-prompt.md"
+import { ChatModel, getModel } from "./llm-providers"
 
 // ============================================================
 // Types
@@ -28,19 +37,22 @@ interface ChatContextValue {
 // Constants
 // ============================================================
 
-const CHAT_ENDPOINT = "https://andgate.unison-services.cloud/s/llm-service/chat"
-
 const INITIAL_SYSTEM_MESSAGE: ChatMessage = {
   id: "system-0",
   role: "system",
   content: SYSTEM_PROMPT,
 }
 
-export type ChatModel = "groq" | "free"
+// ============================================================
+// LLM Helpers
+// ============================================================
 
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
-const GROQ_MODEL = "openai/gpt-oss-120b"
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
+function toApiMessages(messages: ChatMessage[]): ModelMessage[] {
+  return messages.map((m) => ({
+    role: m.role === "snapshot" ? "user" : m.role,
+    content: m.content,
+  }))
+}
 
 // ============================================================
 // Helpers
@@ -176,61 +188,6 @@ function snapshotToText(snapshot: CoachingSnapshot): string {
   return lines.join("\n")
 }
 
-async function callFree(messages: ChatMessage[]): Promise<string> {
-  const apiMessages = messages.map((m) => ({
-    role: m.role === "snapshot" ? "user" : m.role,
-    content: m.content,
-  }))
-
-  const response = await fetch(CHAT_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages: apiMessages }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Chat API error: ${response.status}`)
-  }
-
-  return response.text()
-}
-
-async function callGroq(messages: ChatMessage[]): Promise<string> {
-  const apiMessages = messages.map((m) => ({
-    role: m.role === "snapshot" ? "user" : m.role,
-    content: m.content,
-  }))
-
-  const response = await fetch(GROQ_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages: apiMessages,
-      temperature: 1,
-      max_completion_tokens: 8192,
-      top_p: 1,
-      stream: false,
-    }),
-  })
-
-  if (!response.ok) throw new Error(`Groq API error: ${response.status}`)
-
-  const data = await response.json()
-  return data.choices[0].message.content
-}
-
-async function callChatApi(
-  messages: ChatMessage[],
-  model: ChatModel,
-): Promise<string> {
-  if (model === "groq") return callGroq(messages)
-  return callFree(messages) // rename existing callChatApi body to callFree
-}
-
 // ============================================================
 // Context
 // ============================================================
@@ -251,8 +208,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     INITIAL_SYSTEM_MESSAGE,
   ])
+  const [incomingMessage, setIncomingMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState<ChatModel>("free")
+
+  const visibleMessages: ChatMessage[] = useMemo(() => {
+    if (incomingMessage === null) return messages
+    return [
+      ...messages,
+      { id: "incoming", role: "assistant" as const, content: incomingMessage },
+    ]
+  }, [messages, incomingMessage])
 
   // Use a ref so the snapshot handler always sees the latest messages
   // without needing to be re-registered
@@ -264,23 +230,36 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // ---- LLM call ----
   const triggerLLM = async (newMessages: ChatMessage[]) => {
     setIsLoading(true)
+    setIncomingMessage("")
+
     try {
-      const content = await callChatApi(newMessages, model)
-      const assistantMsg: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        content,
+      const result = streamText({
+        model: getModel(model),
+        messages: toApiMessages(newMessages),
+      })
+
+      let content = ""
+      for await (const delta of result.textStream) {
+        content += delta
+        setIncomingMessage(content)
       }
-      setMessages((prev) => [...prev, assistantMsg])
+
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: "assistant", content },
+      ])
     } catch (err) {
       console.error("Chat API error:", err)
-      const errorMsg: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        content: "Sorry, I failed to get a response from the coach.",
-      }
-      setMessages((prev) => [...prev, errorMsg])
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: "assistant",
+          content: "Sorry, I failed to get a response from the coach.",
+        },
+      ])
     } finally {
+      setIncomingMessage(null)
       setIsLoading(false)
     }
   }
@@ -317,7 +296,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ChatContext.Provider
-      value={{ messages, isLoading, model, setModel, sendMessage }}
+      value={{
+        messages: visibleMessages,
+        isLoading,
+        model,
+        setModel,
+        sendMessage,
+      }}
     >
       {children}
     </ChatContext.Provider>
