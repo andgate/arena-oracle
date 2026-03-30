@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState } from "react"
-import { ChatModel, useChatContext } from "./ChatProvider"
+import { useEffect, useRef, useState } from "react"
+import { useChatContext } from "./ChatProvider"
+import { ChatModel } from "./llm-providers"
 
 export function ChatViewer() {
   const { messages, isLoading, model, setModel, sendMessage } = useChatContext()
