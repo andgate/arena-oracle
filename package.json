@@ -38,7 +38,10 @@
     ]
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.31",
+    "@openrouter/ai-sdk-provider": "^2.3.3",
     "@types/better-sqlite3": "^7.6.13",
+    "ai": "^6.0.141",
     "better-sqlite3": "^12.6.2",
     "chokidar": "^5.0.0",
     "electron-squirrel-startup": "^1.0.1",
