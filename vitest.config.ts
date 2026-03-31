@@ -26,7 +26,7 @@ export default defineConfig({
         "**/main/ipc/**",
         "**/preload/preload.ts",
         // Renderer entry points & untestable hooks
-        "**/renderer/features/**",
+        "**/renderer/components/**",
         "**/renderer/hooks/useIpcChannel.ts",
         "**/renderer/app.tsx",
         "**/renderer/main.ts",
