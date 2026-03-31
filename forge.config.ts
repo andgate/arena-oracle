@@ -1,17 +1,64 @@
 import { MakerSquirrel } from "@electron-forge/maker-squirrel"
-import { PublisherGithub } from "@electron-forge/publisher-github"
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives"
 import { FusesPlugin } from "@electron-forge/plugin-fuses"
 import { VitePlugin } from "@electron-forge/plugin-vite"
+import { PublisherGithub } from "@electron-forge/publisher-github"
 import type { ForgeConfig } from "@electron-forge/shared-types"
 import { FuseV1Options, FuseVersion } from "@electron/fuses"
+import { DepType, Walker } from "flora-colossus"
+import { cp, mkdir } from "node:fs/promises"
+import path from "node:path"
+
+const externalNativeDependencies = ["better-sqlite3"]
+
+type WalkerWithModules = {
+  modules: Array<{ name: string }>
+  walkDependenciesForModule: (
+    modulePath: string,
+    depType: DepType,
+  ) => Promise<void>
+}
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
   },
-  rebuildConfig: {},
-  makers: [new MakerSquirrel({})],
+  hooks: {
+    // see https://github.com/electron/forge/issues/3738#issuecomment-3369076264
+    async packageAfterCopy(_forgeConfig, buildPath) {
+      const sourceNodeModulesPath = path.resolve(__dirname, "node_modules")
+      const destNodeModulesPath = path.resolve(buildPath, "node_modules")
+      const depsToCopy = new Set<string>()
+
+      for (const dep of externalNativeDependencies) {
+        const rootModulePath = path.join(sourceNodeModulesPath, dep)
+        const walker = new Walker(
+          rootModulePath,
+        ) as unknown as WalkerWithModules
+
+        await walker.walkDependenciesForModule(rootModulePath, DepType.PROD)
+
+        depsToCopy.add(dep)
+        for (const mod of walker.modules) {
+          depsToCopy.add(mod.name)
+        }
+      }
+
+      await Promise.all(
+        Array.from(depsToCopy, async (packageName) => {
+          const sourcePath = path.join(sourceNodeModulesPath, packageName)
+          const destPath = path.join(destNodeModulesPath, packageName)
+
+          await mkdir(path.dirname(destPath), { recursive: true })
+          await cp(sourcePath, destPath, {
+            recursive: true,
+            preserveTimestamps: true,
+          })
+        }),
+      )
+    },
+  },
+  makers: [new MakerSquirrel({ name: "ArenaOracle" })],
   publishers: [
     new PublisherGithub({
       repository: {
