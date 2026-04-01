@@ -2,37 +2,24 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "target": "ESNext",
-    "module": "esnext",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "../src/shared",
+    "target": "ES2021",
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    // enable react
-    "jsx": "react-jsx",
-    // linting
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@renderer/*": [
-        "../src/renderer/*"
-      ],
-      "@shared/*": [
-        "../src/shared/*"
-      ]
-    },
-    // Required by tsyringe
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "lib": [
+      "ES2021"
+    ],
+    "outDir": "../.tsbuild/shared",
+    "tsBuildInfoFile": "../.tsbuild/shared/tsconfig.shared.tsbuildinfo",
+    "types": []
   },
   "include": [
-    "../src/shared/**/*",
-    "../tests/shared/**/*"
+    "../src/shared/**/*"
+  ],
+  "exclude": [
+    "../src/shared/**/*.spec.ts"
   ]
 }

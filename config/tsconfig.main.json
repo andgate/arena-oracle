@@ -2,34 +2,22 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "target": "ESNext",
-    "module": "esnext",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    // enable react
-    "jsx": "react-jsx",
-    // linting
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@main/*": [
-        "../src/main/*"
-      ],
-      "@shared/*": [
-        "../src/shared/*"
-      ],
-      "@tests/*": [
-        "../tests/*"
-      ]
-    },
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "..",
+    "target": "ES2021",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2021"
+    ],
+    "outDir": "../.tsbuild/main",
+    "tsBuildInfoFile": "../.tsbuild/main/tsconfig.main.tsbuildinfo",
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
     // Required by tsyringe
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
@@ -37,10 +25,14 @@
   "references": [
     {
       "path": "./tsconfig.shared.json"
-    },
+    }
   ],
   "include": [
     "../src/main/**/*",
     "../tests/main/**/*",
+    "../tests/e2e/**/*"
+  ],
+  "exclude": [
+    "../src/main/**/*.spec.ts"
   ]
 }

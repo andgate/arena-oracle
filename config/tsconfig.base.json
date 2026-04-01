@@ -1,46 +1,26 @@
 {
   "compilerOptions": {
-    "noEmit": true,
-    "target": "ESNext",
-    "module": "esnext",
-    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    // enable react
-    "jsx": "react-jsx",
-    // linting
+    "isolatedModules": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@main/*": [
-        "./src/main/*"
+        "../src/main/*"
       ],
       "@renderer/*": [
-        "./src/renderer/*"
+        "../src/renderer/*"
       ],
       "@shared/*": [
-        "./src/shared/*"
+        "../src/shared/*"
       ],
       "@tests/*": [
-        "./tests/*"
+        "../tests/*"
       ]
-    },
-    // Required by tsyringe
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  },
-  "include": [
-    "../src/**/*",
-    "../tests/**/*",
-  ],
-  "exclude": [
-    "../node_modules"
-  ]
+    }
+  }
 }

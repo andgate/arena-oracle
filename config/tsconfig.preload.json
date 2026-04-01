@@ -2,38 +2,29 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "target": "ESNext",
-    "module": "esnext",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    // enable react
-    "jsx": "react-jsx",
-    // linting
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@shared/*": [
-        "../src/shared/*"
-      ]
-    },
-    // Required by tsyringe
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "../src/preload",
+    "target": "ES2021",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2021",
+      "DOM"
+    ],
+    "outDir": "../.tsbuild/preload",
+    "tsBuildInfoFile": "../.tsbuild/preload/tsconfig.preload.tsbuildinfo",
+    "types": [
+      "node"
+    ]
   },
   "references": [
     {
       "path": "./tsconfig.shared.json"
-    },
+    }
   ],
   "include": [
-    "../src/preload/**/*",
+    "../src/preload/**/*"
   ]
 }
