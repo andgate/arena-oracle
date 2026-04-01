@@ -11,7 +11,7 @@ test.describe("App launch", () => {
 
     const window = await app.firstWindow()
 
-    await expect(window).toHaveTitle(/MTGA Tracker/)
+    await expect(window).toHaveTitle(/Arena Oracle/)
 
     await app.close()
   })

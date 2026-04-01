@@ -17,13 +17,15 @@ if (started) {
 const createWindow = (): BrowserWindow => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
+    width: 450,
     height: 600,
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
   })
+  mainWindow.setMenuBarVisibility(false)
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -36,8 +38,6 @@ const createWindow = (): BrowserWindow => {
 
   mainWindow.webContents.on("did-finish-load", () => {
     mainWindow.show()
-    // Open DevTools
-    mainWindow.webContents.openDevTools()
   })
 
   return mainWindow

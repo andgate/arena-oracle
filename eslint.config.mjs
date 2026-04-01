@@ -1,14 +1,16 @@
 import tsPlugin from "@typescript-eslint/eslint-plugin"
 import tsParser from "@typescript-eslint/parser"
-import importPlugin from "eslint-plugin-import"
 import globals from "globals"
 
 export default [
   {
+    // Note: there should be no other properties in this object
+    ignores: [".github/CODEOWNERS"],
+  },
+  {
     files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       "@typescript-eslint": tsPlugin,
-      import: importPlugin,
     },
     languageOptions: {
       parser: tsParser,

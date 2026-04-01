@@ -1,6 +1,6 @@
+import { IStartable, IStoppable } from "@main/services/lifecycle"
 import { getMtgaPlayerLogPath } from "@main/utils/mtga-paths"
 import { ReplaySubject } from "rxjs"
-import { IStartable, IStoppable } from "src/main/services/lifecycle"
 import { inject, injectable, singleton } from "tsyringe"
 import { IFileSystem } from "../../utils/fs/FileSystem.interface"
 import { IPlayerLogWatchService } from "./PlayerLogWatchService.interface"

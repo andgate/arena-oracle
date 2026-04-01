@@ -7,9 +7,8 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "sourceMap": true,
-    "baseUrl": ".",
     "outDir": "dist",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     // enable react
     "jsx": "react-jsx",
@@ -20,16 +19,16 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@main/*": [
-        "src/main/*"
+        "./src/main/*"
       ],
       "@renderer/*": [
-        "src/renderer/*"
+        "./src/renderer/*"
       ],
       "@shared/*": [
-        "src/shared/*"
+        "./src/shared/*"
       ],
       "@tests/*": [
-        "tests/*"
+        "./tests/*"
       ]
     },
     // Required by tsyringe
