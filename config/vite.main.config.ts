@@ -5,13 +5,16 @@ import { defineConfig } from "vite"
 export default defineConfig({
   resolve: {
     alias: {
-      "@main": path.resolve(__dirname, "src/main"),
-      "@shared": path.resolve(__dirname, "src/shared"),
+      "@main": path.resolve(__dirname, "../src/main"),
+      "@shared": path.resolve(__dirname, "../src/shared"),
     },
   },
   build: {
     rollupOptions: {
       external: ["better-sqlite3"],
+      output: {
+        format: "cjs",
+      },
     },
   },
 })

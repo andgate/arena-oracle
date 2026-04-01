@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "../src/preload",
+    "target": "ES2021",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2021",
+      "DOM"
+    ],
+    "outDir": "../.tsbuild/preload",
+    "tsBuildInfoFile": "../.tsbuild/preload/tsconfig.preload.tsbuildinfo",
+    "types": [
+      "node"
+    ]
+  },
+  "references": [
+    {
+      "path": "./tsconfig.shared.json"
+    }
+  ],
+  "include": [
+    "../src/preload/**/*"
+  ]
+}
