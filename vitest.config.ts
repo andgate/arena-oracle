@@ -27,9 +27,11 @@ export default defineConfig({
         "**/preload/preload.ts",
         // Renderer entry points & untestable hooks
         "**/renderer/components/**",
-        "**/renderer/hooks/useIpcChannel.ts",
-        "**/renderer/app.tsx",
-        "**/renderer/main.ts",
+        "**/renderer/components/ui/**",
+        "**/renderer/hooks/**",
+        "**/renderer/app/**",
+        "**/renderer/lib/**",
+        "**/renderer/index.ts",
         "**/renderer/streams.ts",
       ],
       thresholds: {
