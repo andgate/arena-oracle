@@ -22,8 +22,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), markdownImportPlugin],
   resolve: {
     alias: {
-      "@renderer": path.resolve(__dirname, "src/renderer"),
-      "@shared": path.resolve(__dirname, "src/shared"),
+      "@renderer": path.resolve(__dirname, "../src/renderer"),
+      "@shared": path.resolve(__dirname, "../src/shared"),
     },
   },
   assetsInclude: ["**/*.md"],

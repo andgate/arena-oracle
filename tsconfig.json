@@ -1,42 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "esnext",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    // enable react
-    "jsx": "react-jsx",
-    // linting
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@main/*": [
-        "./src/main/*"
-      ],
-      "@renderer/*": [
-        "./src/renderer/*"
-      ],
-      "@shared/*": [
-        "./src/shared/*"
-      ],
-      "@tests/*": [
-        "./tests/*"
-      ]
+  "files": [],
+  "references": [
+    {
+      "path": "./config/tsconfig.shared.json"
     },
-    // Required by tsyringe
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  },
-  "include": [
-    "src/**/*",
-    "tests/**/*",
+    {
+      "path": "./config/tsconfig.main.json"
+    },
+    {
+      "path": "./config/tsconfig.preload.json"
+    },
+    {
+      "path": "./config/tsconfig.renderer.json"
+    }
   ]
 }
