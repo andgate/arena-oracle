@@ -19,6 +19,8 @@ import { PlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService"
 import { IPlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService.interface"
 import { SettingsService } from "./settings/SettingsService"
 import { ISettingsService } from "./settings/SettingsService.interface"
+import { Sqlite3Service } from "./sqlite3/Sqlite3Service"
+import { ISqlite3Service } from "./sqlite3/Sqlite3Service.interface"
 import { StoreService } from "./store/StoreService"
 import { IStoreService } from "./store/StoreService.interface"
 
@@ -39,6 +41,7 @@ container.register(ICoachingSnapshotService, {
 })
 container.register(IStoreService, { useToken: StoreService })
 container.register(ISettingsService, { useToken: SettingsService })
+container.register(ISqlite3Service, { useToken: Sqlite3Service })
 
 // Register startable and stoppable services
 container.register(IStartable, { useToken: PlayerLogWatchService })

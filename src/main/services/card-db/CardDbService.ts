@@ -1,8 +1,9 @@
 import { getCardDbFile } from "@main/utils/mtga-paths"
 import { AbilityText, ResolvedCard } from "@shared/card-types"
 import Database from "better-sqlite3"
-import { injectable, singleton } from "tsyringe"
+import { inject, injectable, singleton } from "tsyringe"
 import { IStartable, IStoppable } from "../lifecycle"
+import { ISqlite3Service } from "../sqlite3/Sqlite3Service.interface"
 import { ICardDbService } from "./CardDbService.interface"
 
 // ============================================================
@@ -55,6 +56,10 @@ function decodeAbilityText(raw: string, cardName: string): string {
 @injectable()
 @singleton()
 export class CardDbService implements ICardDbService, IStartable, IStoppable {
+  constructor(
+    @inject(ISqlite3Service) private sqlite3Service: ISqlite3Service,
+  ) {}
+
   // ============================================================
   // Service state
   // ============================================================
@@ -73,7 +78,7 @@ export class CardDbService implements ICardDbService, IStartable, IStoppable {
       return
     }
 
-    this.cardDb = new Database(dbPath, { readonly: true })
+    this.cardDb = this.sqlite3Service.open(dbPath, { readonly: true })
     this.cardCache = new Map()
   }
 
