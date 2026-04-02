@@ -17,6 +17,10 @@ import { PlayerLogParserService } from "./player-log-parser/PlayerLogParserServi
 import { IPlayerLogParserService } from "./player-log-parser/PlayerLogParserService.interface"
 import { PlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService"
 import { IPlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService.interface"
+import { SettingsService } from "./settings/SettingsService"
+import { ISettingsService } from "./settings/SettingsService.interface"
+import { StoreService } from "./store/StoreService"
+import { IStoreService } from "./store/StoreService.interface"
 
 // Bind interfaces to service implementations
 container.register(IFileSystem, { useToken: FileSystem })
@@ -33,6 +37,8 @@ container.register(ICoachingSnapshotTransform, {
 container.register(ICoachingSnapshotService, {
   useToken: CoachingSnapshotService,
 })
+container.register(IStoreService, { useToken: StoreService })
+container.register(ISettingsService, { useToken: SettingsService })
 
 // Register startable and stoppable services
 container.register(IStartable, { useToken: PlayerLogWatchService })

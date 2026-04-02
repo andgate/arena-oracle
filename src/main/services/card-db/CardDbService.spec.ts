@@ -2,26 +2,49 @@ import path from "path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { CardDbService } from "./CardDbService"
 
-const mockGetCardDbFile = vi.fn<() => string | null>(() =>
-  path.resolve(__dirname, "__fixtures__", "test_card.db"),
-)
+const FIXTURE_DB_PATH = path.resolve(__dirname, "__fixtures__", "test_card.db")
+
+const { mockGetCardDbFile, mockDatabaseFactory } = vi.hoisted(() => ({
+  mockGetCardDbFile: vi.fn<() => string | null>(),
+  mockDatabaseFactory: {
+    current: null as null | (() => {
+      close: ReturnType<typeof vi.fn>
+      prepare: ReturnType<typeof vi.fn>
+    }),
+  },
+}))
 
 vi.mock("@main/utils/mtga-paths", () => ({
   getCardDbFile: () => mockGetCardDbFile(),
 }))
 
+vi.mock("better-sqlite3", async () => {
+  const actual =
+    await vi.importActual<typeof import("better-sqlite3")>("better-sqlite3")
+
+  return {
+    default: vi.fn(function MockDatabase(...args: unknown[]) {
+      if (mockDatabaseFactory.current) {
+        return mockDatabaseFactory.current()
+      }
+
+      return Reflect.construct(actual, args)
+    }),
+  }
+})
+
 describe("CardDbService", () => {
   let service: CardDbService
 
   beforeEach(() => {
-    mockGetCardDbFile.mockReturnValue(
-      path.resolve(__dirname, "__fixtures__", "test_card.db"),
-    )
+    mockGetCardDbFile.mockReturnValue(FIXTURE_DB_PATH)
+    mockDatabaseFactory.current = null
     service = new CardDbService()
   })
 
   afterEach(() => {
     service.stop()
+    vi.restoreAllMocks()
   })
 
   it("is not loaded before start and returns undefined for lookups", () => {
@@ -134,16 +157,12 @@ type MockCardRow = {
 
 describe("CardDbService edge cases", () => {
   afterEach(() => {
-    mockGetCardDbFile.mockReturnValue(
-      path.resolve(__dirname, "__fixtures__", "test_card.db"),
-    )
-    vi.resetModules()
-    vi.doUnmock("@main/utils/mtga-paths")
-    vi.doUnmock("better-sqlite3")
+    mockGetCardDbFile.mockReturnValue(FIXTURE_DB_PATH)
+    mockDatabaseFactory.current = null
     vi.restoreAllMocks()
   })
 
-  it("logs and does not load when the card DB file cannot be resolved", async () => {
+  it("logs and does not load when the card DB file cannot be resolved", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     mockGetCardDbFile.mockReturnValue(null)
     const service = new CardDbService()
@@ -156,7 +175,7 @@ describe("CardDbService edge cases", () => {
     )
   })
 
-  it("maps fallback values and ignores missing ability rows", async () => {
+  it("maps fallback values and ignores missing ability rows", () => {
     const cardRow: MockCardRow = {
       AbilityIds: "9:101,86:27",
       Colors: "7",
@@ -179,22 +198,14 @@ describe("CardDbService edge cases", () => {
         return undefined
       }),
     }))
-    const Database = vi.fn(function MockDatabase() {
-      return {
-        close: vi.fn(),
-        prepare,
-      }
+
+    mockGetCardDbFile.mockReturnValue("C:\\fixtures\\test_card.db")
+    mockDatabaseFactory.current = () => ({
+      close: vi.fn(),
+      prepare,
     })
 
-    vi.doMock("@main/utils/mtga-paths", () => ({
-      getCardDbFile: () => "C:\\fixtures\\test_card.db",
-    }))
-    vi.doMock("better-sqlite3", () => ({
-      default: Database,
-    }))
-
-    const { CardDbService: MockedCardDbService } = await import("./CardDbService")
-    const service = new MockedCardDbService()
+    const service = new CardDbService()
 
     service.start()
 

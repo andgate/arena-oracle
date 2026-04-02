@@ -10,6 +10,15 @@ const mtgaAPI: MTGAElectronAPI = {
     lookupCard: (grpId: number) =>
       ipcRenderer.invoke("cardDb:lookupCard", grpId),
   },
+  settings: {
+    get: () => ipcRenderer.invoke("settings:get"),
+    getAlwaysOnTop: () => ipcRenderer.invoke("settings:getAlwaysOnTop"),
+    getDeveloperMode: () => ipcRenderer.invoke("settings:getDeveloperMode"),
+    setAlwaysOnTop: (value: boolean) =>
+      ipcRenderer.invoke("settings:setAlwaysOnTop", value),
+    setDeveloperMode: (value: boolean) =>
+      ipcRenderer.invoke("settings:setDeveloperMode", value),
+  },
 }
 
 // Setup generic, observable IPC channels for renderer.

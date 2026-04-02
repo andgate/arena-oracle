@@ -31,8 +31,5 @@
     "../src/main/**/*",
     "../tests/main/**/*",
     "../tests/e2e/**/*"
-  ],
-  "exclude": [
-    "../src/main/**/*.spec.ts"
   ]
 }

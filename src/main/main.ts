@@ -3,6 +3,7 @@ import started from "electron-squirrel-startup"
 import path from "node:path"
 import { registerCardDbIPC } from "./ipc/card-db-ipc"
 import { registerStreams } from "./ipc/register-streams"
+import { registerSettingsIPC } from "./ipc/settings-ipc"
 import { container } from "./services/container"
 import { IStartable } from "./services/lifecycle"
 
@@ -54,6 +55,7 @@ app.on("ready", () => {
 
   // Register our IPC service APIs
   registerCardDbIPC()
+  registerSettingsIPC()
 
   // All subscribers (Node services + IPC bridge) are attached
   // Now it's safe to start I/O
