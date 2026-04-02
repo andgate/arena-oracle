@@ -23,6 +23,10 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
   },
+  rebuildConfig: {
+    force: true,
+    onlyModules: externalNativeDependencies,
+  },
   hooks: {
     // see https://github.com/electron/forge/issues/3738#issuecomment-3369076264
     async packageAfterCopy(_forgeConfig, buildPath) {

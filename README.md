@@ -12,7 +12,7 @@ Arena Oracle is an Electron desktop app that watches `MTGA` log output, builds a
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 25.x
 - `pnpm`
 - Git LFS
 
@@ -33,12 +33,7 @@ pnpm install
 cp .env.template .env
 ```
 
-When `pnpm approve-builds` opens, approve build scripts for:
-
-- `better-sqlite3`
-- `esbuild`
-
-This only needs to be done when `pnpm` reports ignored build scripts or when a new script-running dependency is introduced.
+This repo enforces `node@^25.0.0` via `package.json` engines and `.npmrc`.
 
 Set the values in `.env` as needed:
 
@@ -60,12 +55,6 @@ pnpm check
 pnpm lint
 pnpm test
 pnpm test:e2e
-```
-
-If native dependencies were previously installed without approved build scripts, repair them with:
-
-```bash
-pnpm rebuild better-sqlite3
 ```
 
 ## Project notes

@@ -1,6 +1,7 @@
 import { AppSidebar, type AppView } from "@renderer/components/app-sidebar"
 import { ChatProvider } from "@renderer/components/chat/ChatProvider"
 import { ChatViewer } from "@renderer/components/chat/ChatViewer"
+import { SettingsProvider } from "@renderer/hooks/use-settings"
 import { AppLayout } from "@renderer/app/layout"
 import { useState } from "react"
 import { createRoot } from "react-dom/client"
@@ -119,26 +120,28 @@ function App() {
   }
 
   return (
-    <ChatProvider>
-      <AppLayout
-        sidebar={
-          <AppSidebar
+    <SettingsProvider>
+      <ChatProvider>
+        <AppLayout
+          sidebar={
+            <AppSidebar
+              activeView={activeView}
+              historySessions={[...HISTORY_SESSIONS]}
+              selectedHistoryId={selectedHistoryId}
+              onSelectCurrentSession={handleSelectCurrentSession}
+              onSelectHistoryView={handleSelectHistoryView}
+              onSelectHistorySession={handleSelectHistorySession}
+              onSelectSettings={handleSelectSettings}
+            />
+          }
+        >
+          <AppContent
             activeView={activeView}
-            historySessions={[...HISTORY_SESSIONS]}
             selectedHistoryId={selectedHistoryId}
-            onSelectCurrentSession={handleSelectCurrentSession}
-            onSelectHistoryView={handleSelectHistoryView}
-            onSelectHistorySession={handleSelectHistorySession}
-            onSelectSettings={handleSelectSettings}
           />
-        }
-      >
-        <AppContent
-          activeView={activeView}
-          selectedHistoryId={selectedHistoryId}
-        />
-      </AppLayout>
-    </ChatProvider>
+        </AppLayout>
+      </ChatProvider>
+    </SettingsProvider>
   )
 }
 

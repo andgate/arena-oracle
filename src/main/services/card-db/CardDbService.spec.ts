@@ -1,27 +1,80 @@
+import Database from "better-sqlite3"
 import path from "path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { ISqlite3Service } from "../sqlite3/Sqlite3Service.interface"
 import { CardDbService } from "./CardDbService"
 
-const mockGetCardDbFile = vi.fn<() => string | null>(() =>
-  path.resolve(__dirname, "__fixtures__", "test_card.db"),
-)
+type MockCardRow = {
+  AbilityIds: string
+  Colors: string | null
+  ExpansionCode: string | null
+  GrpId: number
+  Name: string
+  OldSchoolManaText: string
+  Power: string | null
+  Rarity: number
+  SubtypeLine: string | null
+  Toughness: string | null
+  TypeLine: string
+}
+
+const FIXTURE_DB_PATH = path.resolve(__dirname, "__fixtures__", "test_card.db")
+
+const { mockGetCardDbFile } = vi.hoisted(() => ({
+  mockGetCardDbFile: vi.fn<() => string | null>(),
+}))
 
 vi.mock("@main/utils/mtga-paths", () => ({
   getCardDbFile: () => mockGetCardDbFile(),
 }))
 
+class Sqlite3ServiceFake implements ISqlite3Service {
+  constructor(
+    private openImpl: (
+      path: string,
+      options?: Database.Options,
+    ) => Database.Database,
+  ) {}
+
+  open(path: string, options?: Database.Options): Database.Database {
+    return this.openImpl(path, options)
+  }
+}
+
+function createMockDatabase({
+  abilityRowsById = {},
+  cardRow,
+}: {
+  abilityRowsById?: Record<number, { Id: number; Loc: string } | undefined>
+  cardRow?: MockCardRow
+}): Database.Database {
+  return {
+    close: vi.fn(),
+    prepare: vi.fn((sql: string) => ({
+      get: vi.fn((value: number) => {
+        if (sql.includes("FROM Cards c")) return cardRow
+        if (sql.includes("FROM Abilities a")) return abilityRowsById[value]
+        return undefined
+      }),
+    })),
+  } as unknown as Database.Database
+}
+
 describe("CardDbService", () => {
   let service: CardDbService
 
   beforeEach(() => {
-    mockGetCardDbFile.mockReturnValue(
-      path.resolve(__dirname, "__fixtures__", "test_card.db"),
+    mockGetCardDbFile.mockReturnValue(FIXTURE_DB_PATH)
+    service = new CardDbService(
+      new Sqlite3ServiceFake(
+        (dbPath, options) => new Database(dbPath, options),
+      ),
     )
-    service = new CardDbService()
   })
 
   afterEach(() => {
     service.stop()
+    vi.restoreAllMocks()
   })
 
   it("is not loaded before start and returns undefined for lookups", () => {
@@ -118,35 +171,19 @@ describe("CardDbService", () => {
   })
 })
 
-type MockCardRow = {
-  AbilityIds: string
-  Colors: string | null
-  ExpansionCode: string | null
-  GrpId: number
-  Name: string
-  OldSchoolManaText: string
-  Power: string | null
-  Rarity: number
-  SubtypeLine: string | null
-  Toughness: string | null
-  TypeLine: string
-}
-
 describe("CardDbService edge cases", () => {
   afterEach(() => {
-    mockGetCardDbFile.mockReturnValue(
-      path.resolve(__dirname, "__fixtures__", "test_card.db"),
-    )
-    vi.resetModules()
-    vi.doUnmock("@main/utils/mtga-paths")
-    vi.doUnmock("better-sqlite3")
+    mockGetCardDbFile.mockReturnValue(FIXTURE_DB_PATH)
     vi.restoreAllMocks()
   })
 
-  it("logs and does not load when the card DB file cannot be resolved", async () => {
+  it("logs and does not load when the card DB file cannot be resolved", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     mockGetCardDbFile.mockReturnValue(null)
-    const service = new CardDbService()
+    const sqlite3Service = new Sqlite3ServiceFake(() => {
+      throw new Error("should not open database when path is missing")
+    })
+    const service = new CardDbService(sqlite3Service)
 
     service.start()
 
@@ -155,9 +192,15 @@ describe("CardDbService edge cases", () => {
       "Could not find path for Raw_CardDatabase_*.mtga",
     )
   })
+})
 
-  it("maps fallback values and ignores missing ability rows", async () => {
-    const cardRow: MockCardRow = {
+describe("CardDbService mapping fallbacks", () => {
+  let abilityRowsById: Record<number, { Id: number; Loc: string } | undefined>
+  let cardRow: MockCardRow
+  let service: CardDbService
+
+  beforeEach(() => {
+    cardRow = {
       AbilityIds: "9:101,86:27",
       Colors: "7",
       ExpansionCode: null,
@@ -170,36 +213,31 @@ describe("CardDbService edge cases", () => {
       Toughness: null,
       TypeLine: "Artifact",
     }
-    const prepare = vi.fn((sql: string) => ({
-      get: vi.fn((value: number) => {
-        if (sql.includes("FROM Cards c")) return cardRow
-        if (sql.includes("FROM Abilities a")) {
-          return value === 9 ? { Id: 9, Loc: "" } : undefined
-        }
-        return undefined
-      }),
-    }))
-    const Database = vi.fn(function MockDatabase() {
-      return {
-        close: vi.fn(),
-        prepare,
-      }
+    abilityRowsById = {}
+
+    const db = createMockDatabase({
+      cardRow,
+      abilityRowsById,
     })
 
-    vi.doMock("@main/utils/mtga-paths", () => ({
-      getCardDbFile: () => "C:\\fixtures\\test_card.db",
-    }))
-    vi.doMock("better-sqlite3", () => ({
-      default: Database,
-    }))
+    mockGetCardDbFile.mockReturnValue("C:\\fixtures\\test_card.db")
+    const sqlite3Service = new Sqlite3ServiceFake(() => db)
 
-    const { CardDbService: MockedCardDbService } = await import("./CardDbService")
-    const service = new MockedCardDbService()
+    service = new CardDbService(sqlite3Service)
+  })
+
+  afterEach(() => {
+    mockGetCardDbFile.mockReturnValue(FIXTURE_DB_PATH)
+    service.stop()
+    vi.restoreAllMocks()
+  })
+
+  it("maps fallback values for missing card fields", () => {
+    cardRow.AbilityIds = ""
 
     service.start()
 
     expect(service.lookupCard(42)).toEqual({
-      abilities: [{ id: 9, text: "" }],
       colors: ["7"],
       grpId: 42,
       manaCost: "",
@@ -210,6 +248,21 @@ describe("CardDbService edge cases", () => {
       subtypeLine: "",
       toughness: "",
       typeLine: "Artifact",
+      abilities: [],
+    })
+  })
+
+  it("ignores missing ability rows", () => {
+    abilityRowsById[9] = { Id: 9, Loc: "" }
+
+    service.start()
+
+    expect(service.lookupCard(42)?.abilities).toEqual([
+      { id: 9, text: "" },
+    ])
+    expect(service.lookupCard(42)).toMatchObject({
+      grpId: 42,
+      name: "Test Card",
     })
   })
 })

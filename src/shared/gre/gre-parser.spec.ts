@@ -1,6 +1,5 @@
 import { parseLogLine } from "@shared/gre/gre-parser"
 import { readFileSync } from "fs"
-import path from "path"
 import { test as baseTest, describe, expect } from "vitest"
 import { TGREMessage, TMulliganReq } from "./gre-types"
 
@@ -11,10 +10,7 @@ const test = baseTest.extend<{ fixture: Fixture }>({
   fixture: [
     async ({}, use: (fn: (name: string) => string) => Promise<void>) => {
       await use((name: string) =>
-        readFileSync(
-          path.resolve(import.meta.dirname, `__fixtures__/${name}`),
-          "utf-8",
-        ).trimEnd(),
+        readFileSync(`src/shared/gre/__fixtures__/${name}`, "utf-8").trimEnd(),
       )
     },
     { scope: "file" },

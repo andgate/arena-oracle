@@ -5,6 +5,9 @@
       "path": "./config/tsconfig.shared.json"
     },
     {
+      "path": "./config/tsconfig.shared-tests.json"
+    },
+    {
       "path": "./config/tsconfig.main.json"
     },
     {

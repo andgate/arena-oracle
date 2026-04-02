@@ -5,8 +5,22 @@ export interface CardDbAPI {
   lookupCard: (grpId: number) => Promise<ResolvedCard | null>
 }
 
+export interface AppSettings {
+  alwaysOnTop: boolean
+  developerMode: boolean
+}
+
+export interface SettingsAPI {
+  get: () => Promise<AppSettings>
+  getAlwaysOnTop: () => Promise<boolean>
+  getDeveloperMode: () => Promise<boolean>
+  setAlwaysOnTop: (value: boolean) => Promise<void>
+  setDeveloperMode: (value: boolean) => Promise<void>
+}
+
 export interface MTGAElectronAPI {
   cardDb: CardDbAPI
+  settings: SettingsAPI
 }
 
 export interface IpcChannels {

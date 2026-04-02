@@ -7,19 +7,17 @@
     "emitDeclarationOnly": true,
     "rootDir": "..",
     "target": "ES2021",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": [
-      "ES2021",
-      "DOM",
-      "DOM.Iterable"
+      "ES2021"
     ],
-    "outDir": "../.tsbuild/renderer",
-    "tsBuildInfoFile": "../.tsbuild/renderer/tsconfig.renderer.tsbuildinfo",
+    "outDir": "../.tsbuild/shared-tests",
+    "tsBuildInfoFile": "../.tsbuild/shared-tests/tsconfig.shared-tests.tsbuildinfo",
     "types": [
-      "vite/client"
-    ]
+      "node",
+      "vitest/globals"
+    ],
   },
   "references": [
     {
@@ -27,6 +25,6 @@
     }
   ],
   "include": [
-    "../src/renderer/**/*"
+    "../src/shared/**/*.spec.ts"
   ]
 }
