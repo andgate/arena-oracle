@@ -85,7 +85,7 @@ export function SettingsView() {
 
         <TabsContent value="general">
           <Card>
-            <CardContent className="space-y-4 pt-4 text-sm text-muted-foreground">
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
               <SettingField
                 label="Always on top"
                 description="Keep Arena Oracle above other windows while you play."
