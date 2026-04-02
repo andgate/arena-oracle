@@ -1,6 +1,6 @@
+import { gameState$ } from "@renderer/streams"
 import { GameState } from "@shared/game-state-types"
 import { useEffect, useState } from "react"
-import { gameState$ } from "../streams"
 
 export function GameStateViewer() {
   const [state, setState] = useState<GameState | null>(null)

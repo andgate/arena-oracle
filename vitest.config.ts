@@ -21,6 +21,7 @@ export default defineConfig({
         "**/main/services/container.ts",
         "**/main/services/lifecycle.ts",
         "**/main/services/sqlite3/Sqlite3Service.ts",
+        "**/main/services/store/StoreService.ts",
         "**/main/utils/fs/FileSystem.ts",
         // Entry points & IPC wiring
         "**/main/main.ts",

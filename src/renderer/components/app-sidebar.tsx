@@ -3,11 +3,13 @@ import {
   Cog,
   MessageSquare,
   Menu,
+  Wrench,
   X,
   type LucideIcon,
 } from "lucide-react"
 
 import { Button } from "@renderer/components/ui/button"
+import { useSettings } from "@renderer/hooks/use-settings"
 import {
   Sidebar,
   SidebarContent,
@@ -29,13 +31,10 @@ export type HistorySession = {
 
 type AppSidebarProps = {
   activeView: AppView
-  debugEnabled?: boolean
   historySessions: HistorySession[]
   selectedHistoryId: string | null
-  onSelectCurrentSession: () => void
-  onSelectHistoryView: () => void
   onSelectHistorySession: (sessionId: string) => void
-  onSelectSettings: () => void
+  onSelectView: (view: AppView) => void
 }
 
 type SidebarNavItemProps = {
@@ -63,15 +62,14 @@ function SidebarNavItem({
 
 export function AppSidebar({
   activeView,
-  debugEnabled = false,
   historySessions,
   selectedHistoryId,
-  onSelectCurrentSession,
-  onSelectHistoryView,
   onSelectHistorySession,
-  onSelectSettings,
+  onSelectView,
 }: AppSidebarProps) {
+  const { settings } = useSettings()
   const { isMobile, state, toggleSidebar } = useSidebar()
+  const debugEnabled = settings?.developerMode ?? false
   const showExpandedSections = isMobile || state === "expanded"
 
   const handleSidebarSelection = (callback: () => void) => {
@@ -116,7 +114,7 @@ export function AppSidebar({
             icon={MessageSquare}
             label="Current"
             isActive={activeView === "chat"}
-            onClick={() => handleSidebarSelection(onSelectCurrentSession)}
+            onClick={() => handleSidebarSelection(() => onSelectView("chat"))}
           />
         </SidebarMenu>
 
@@ -133,7 +131,7 @@ export function AppSidebar({
                 icon={Clock3}
                 label="All sessions"
                 isActive={activeView === "history" && selectedHistoryId === null}
-                onClick={() => handleSidebarSelection(onSelectHistoryView)}
+                onClick={() => handleSidebarSelection(() => onSelectView("history"))}
               />
               {historySessions.map((session) => (
                 <SidebarMenuItem key={session.id}>
@@ -160,19 +158,20 @@ export function AppSidebar({
 
       <SidebarFooter className="border-t border-sidebar-border p-2">
         <SidebarMenu>
+          {debugEnabled && (
+            <SidebarNavItem
+              icon={Wrench}
+              label="Debug"
+              isActive={activeView === "debug"}
+              onClick={() => handleSidebarSelection(() => onSelectView("debug"))}
+            />
+          )}
           <SidebarNavItem
             icon={Cog}
             label="Settings"
             isActive={activeView === "settings"}
-            onClick={() => handleSidebarSelection(onSelectSettings)}
+            onClick={() => handleSidebarSelection(() => onSelectView("settings"))}
           />
-          {debugEnabled && (
-            <SidebarMenuItem>
-              <SidebarMenuButton isActive={activeView === "debug"}>
-                <span>Debug</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

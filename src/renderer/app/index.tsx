@@ -1,9 +1,10 @@
+import { AppLayout } from "@renderer/app/layout"
 import { AppSidebar, type AppView } from "@renderer/components/app-sidebar"
 import { ChatProvider } from "@renderer/components/chat/ChatProvider"
 import { ChatViewer } from "@renderer/components/chat/ChatViewer"
-import { SettingsProvider } from "@renderer/hooks/use-settings"
-import { AppLayout } from "@renderer/app/layout"
-import { useState } from "react"
+import { SettingsView } from "@renderer/components/SettingsView"
+import { SettingsProvider, useSettings } from "@renderer/hooks/use-settings"
+import { type ReactNode, useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
 import "../styles/globals.css"
 
@@ -74,15 +75,7 @@ function AppContent({
     )
   }
 
-  if (activeView === "settings") {
-    return (
-      <PlaceholderView
-        eyebrow="Settings"
-        title="Application settings"
-        description="Settings UI will arrive in a follow-up story. The navigation entry and dedicated content area are now in place."
-      />
-    )
-  }
+  if (activeView === "settings") return <SettingsView />
 
   return (
     <PlaceholderView
@@ -93,11 +86,35 @@ function AppContent({
   )
 }
 
-function App() {
+function getViewTitle(activeView: AppView, selectedHistoryId: string | null) {
+  if (activeView === "settings") return "Settings"
+  if (activeView === "history" && selectedHistoryId !== null) return "History"
+  if (activeView === "history") return "History"
+  if (activeView === "debug") return "Debug"
+  return "Arena Oracle"
+}
+
+function AppProviders({ children }: { children: ReactNode }) {
+  return (
+    <SettingsProvider>
+      <ChatProvider>{children}</ChatProvider>
+    </SettingsProvider>
+  )
+}
+
+function AppShell() {
+  const { settings } = useSettings()
   const [activeView, setActiveView] = useState<AppView>("chat")
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
     null,
   )
+  const debugEnabled = settings?.developerMode ?? false
+
+  useEffect(() => {
+    if (!debugEnabled && activeView === "debug") {
+      setActiveView("chat")
+    }
+  }, [activeView, debugEnabled])
 
   const handleSelectCurrentSession = () => {
     setSelectedHistoryId(null)
@@ -119,29 +136,50 @@ function App() {
     setActiveView("settings")
   }
 
+  const handleSelectView = (view: AppView) => {
+    switch (view) {
+      case "chat":
+        handleSelectCurrentSession()
+        break
+      case "history":
+        handleSelectHistoryView()
+        break
+      case "settings":
+        handleSelectSettings()
+        break
+      default:
+        setSelectedHistoryId(null)
+        setActiveView(view)
+        break
+    }
+  }
+
   return (
-    <SettingsProvider>
-      <ChatProvider>
-        <AppLayout
-          sidebar={
-            <AppSidebar
-              activeView={activeView}
-              historySessions={[...HISTORY_SESSIONS]}
-              selectedHistoryId={selectedHistoryId}
-              onSelectCurrentSession={handleSelectCurrentSession}
-              onSelectHistoryView={handleSelectHistoryView}
-              onSelectHistorySession={handleSelectHistorySession}
-              onSelectSettings={handleSelectSettings}
-            />
-          }
-        >
-          <AppContent
-            activeView={activeView}
-            selectedHistoryId={selectedHistoryId}
-          />
-        </AppLayout>
-      </ChatProvider>
-    </SettingsProvider>
+    <AppLayout
+      title={getViewTitle(activeView, selectedHistoryId)}
+      sidebar={
+        <AppSidebar
+          activeView={activeView}
+          historySessions={[...HISTORY_SESSIONS]}
+          selectedHistoryId={selectedHistoryId}
+          onSelectHistorySession={handleSelectHistorySession}
+          onSelectView={handleSelectView}
+        />
+      }
+    >
+      <AppContent
+        activeView={activeView}
+        selectedHistoryId={selectedHistoryId}
+      />
+    </AppLayout>
+  )
+}
+
+function App() {
+  return (
+    <AppProviders>
+      <AppShell />
+    </AppProviders>
   )
 }
 
