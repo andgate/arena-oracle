@@ -1,3 +1,4 @@
+import { coachingSnapshot$ } from "@renderer/streams"
 import {
   BattlefieldCard,
   CoachingSnapshot,
@@ -5,7 +6,6 @@ import {
   HandCard,
 } from "@shared/coaching-types"
 import { useEffect, useState } from "react"
-import { coachingSnapshot$ } from "../streams"
 
 // ============================================================
 // Card views

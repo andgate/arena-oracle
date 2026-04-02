@@ -16,5 +16,12 @@
     {
       "path": "./config/tsconfig.renderer.json"
     }
-  ]
+  ],
+  "compilerOptions": {
+    "paths": {
+      "@renderer/*": [
+        "./src/renderer/*"
+      ]
+    }
+  }
 }
