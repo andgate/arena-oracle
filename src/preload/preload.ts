@@ -10,6 +10,22 @@ const mtgaAPI: MTGAElectronAPI = {
     lookupCard: (grpId: number) =>
       ipcRenderer.invoke("cardDb:lookupCard", grpId),
   },
+  providers: {
+    getProfiles: () => ipcRenderer.invoke("providers:getProfiles"),
+    addProfile: (profile) =>
+      ipcRenderer.invoke("providers:addProfile", profile),
+    updateProfile: (id, updates) =>
+      ipcRenderer.invoke("providers:updateProfile", id, updates),
+    removeProfile: (id: string) =>
+      ipcRenderer.invoke("providers:removeProfile", id),
+    getSelectedProfileId: () =>
+      ipcRenderer.invoke("providers:getSelectedProfileId"),
+    setSelectedProfileId: (id: string) =>
+      ipcRenderer.invoke("providers:setSelectedProfileId", id),
+    getApiKey: (id: string) => ipcRenderer.invoke("providers:getApiKey", id),
+    setApiKey: (id: string, apiKey: string) =>
+      ipcRenderer.invoke("providers:setApiKey", id, apiKey),
+  },
   settings: {
     get: () => ipcRenderer.invoke("settings:get"),
     getAlwaysOnTop: () => ipcRenderer.invoke("settings:getAlwaysOnTop"),

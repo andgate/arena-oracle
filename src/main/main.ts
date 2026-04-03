@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron"
 import started from "electron-squirrel-startup"
 import path from "node:path"
 import { registerCardDbIPC } from "./ipc/card-db-ipc"
+import { registerProvidersIPC } from "./ipc/providers-ipc"
 import { registerStreams } from "./ipc/register-streams"
 import { registerSettingsIPC } from "./ipc/settings-ipc"
 import { container } from "./services/container"
@@ -55,6 +56,7 @@ app.on("ready", () => {
 
   // Register our IPC service APIs
   registerCardDbIPC()
+  registerProvidersIPC()
   registerSettingsIPC()
 
   // All subscribers (Node services + IPC bridge) are attached
