@@ -5,7 +5,7 @@ import globals from "globals"
 export default [
   {
     // Note: there should be no other properties in this object
-    ignores: [".github/CODEOWNERS", ".tsbuild", ".vite"],
+    ignores: [".github/CODEOWNERS", ".tsbuild", ".vite", "coverage"],
   },
   {
     files: ["**/*.ts", "**/*.tsx"],

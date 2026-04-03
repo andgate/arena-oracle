@@ -1,8 +1,8 @@
-import { AppSettings } from "@shared/electron-types"
+import { AppStoreSchema } from "@shared/electron-types"
 
 export const IStoreService = Symbol("IStoreService")
 
 export interface IStoreService {
-  get<K extends keyof AppSettings>(key: K): AppSettings[K]
-  set<K extends keyof AppSettings>(key: K, value: AppSettings[K]): void
+  get<K extends keyof AppStoreSchema>(key: K): AppStoreSchema[K]
+  set<K extends keyof AppStoreSchema>(key: K, value: AppStoreSchema[K]): void
 }

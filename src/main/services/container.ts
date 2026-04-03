@@ -12,11 +12,15 @@ import { GameStateReducer } from "./game-state/GameStateReducer"
 import { IGameStateReducer } from "./game-state/GameStateReducer.interface"
 import { GameStateService } from "./game-state/GameStateService"
 import { IGameStateService } from "./game-state/GameStateService.interface"
+import { KeytarService } from "./keytar/KeytarService"
+import { IKeytarService } from "./keytar/KeytarService.interface"
 import { IStartable, IStoppable } from "./lifecycle"
 import { PlayerLogParserService } from "./player-log-parser/PlayerLogParserService"
 import { IPlayerLogParserService } from "./player-log-parser/PlayerLogParserService.interface"
 import { PlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService"
 import { IPlayerLogWatchService } from "./player-log-watch/PlayerLogWatchService.interface"
+import { ProviderService } from "./providers/ProviderService"
+import { IProviderService } from "./providers/ProviderService.interface"
 import { SettingsService } from "./settings/SettingsService"
 import { ISettingsService } from "./settings/SettingsService.interface"
 import { Sqlite3Service } from "./sqlite3/Sqlite3Service"
@@ -39,7 +43,9 @@ container.register(ICoachingSnapshotTransform, {
 container.register(ICoachingSnapshotService, {
   useToken: CoachingSnapshotService,
 })
+container.register(IKeytarService, { useToken: KeytarService })
 container.register(IStoreService, { useToken: StoreService })
+container.register(IProviderService, { useToken: ProviderService })
 container.register(ISettingsService, { useToken: SettingsService })
 container.register(ISqlite3Service, { useToken: Sqlite3Service })
 

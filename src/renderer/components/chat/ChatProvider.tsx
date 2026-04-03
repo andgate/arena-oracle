@@ -10,7 +10,7 @@ import {
   useState,
 } from "react"
 import SYSTEM_PROMPT from "./coaching-prompt.md"
-import { ChatModel, getModel } from "./llm-providers"
+import { ChatModel, getModel } from "@renderer/lib/ai"
 
 // ============================================================
 // Types

@@ -17,9 +17,11 @@ export default defineConfig({
         "**/*.d.ts",
         // Mock files
         "**/Mock*.{ts,tsx}",
+        "**/*.mock.ts",
         // DI wiring & symbol declarations
         "**/main/services/container.ts",
         "**/main/services/lifecycle.ts",
+        "**/main/services/keytar/KeytarService.ts",
         "**/main/services/sqlite3/Sqlite3Service.ts",
         "**/main/services/store/StoreService.ts",
         "**/main/utils/fs/FileSystem.ts",

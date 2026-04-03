@@ -3,6 +3,7 @@ import { AppSidebar, type AppView } from "@renderer/components/app-sidebar"
 import { ChatProvider } from "@renderer/components/chat/ChatProvider"
 import { ChatViewer } from "@renderer/components/chat/ChatViewer"
 import { SettingsView } from "@renderer/components/SettingsView"
+import { ProvidersProvider } from "@renderer/hooks/use-providers"
 import { SettingsProvider, useSettings } from "@renderer/hooks/use-settings"
 import { type ReactNode, useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
@@ -97,7 +98,9 @@ function getViewTitle(activeView: AppView, selectedHistoryId: string | null) {
 function AppProviders({ children }: { children: ReactNode }) {
   return (
     <SettingsProvider>
-      <ChatProvider>{children}</ChatProvider>
+      <ProvidersProvider>
+        <ChatProvider>{children}</ChatProvider>
+      </ProvidersProvider>
     </SettingsProvider>
   )
 }

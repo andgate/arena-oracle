@@ -1,22 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { AppSettings } from "@shared/electron-types"
-import { IStoreService } from "../store/StoreService.interface"
 import { SettingsService } from "./SettingsService"
-
-class FakeStoreService implements IStoreService {
-  private values: AppSettings = {
-    alwaysOnTop: false,
-    developerMode: false,
-  }
-
-  get<K extends keyof AppSettings>(key: K): AppSettings[K] {
-    return this.values[key]
-  }
-
-  set<K extends keyof AppSettings>(key: K, value: AppSettings[K]): void {
-    this.values[key] = value
-  }
-}
+import { FakeStoreService } from "../store/StoreService.mock"
 
 describe("SettingsService", () => {
   it("returns all settings from the backing store", () => {
