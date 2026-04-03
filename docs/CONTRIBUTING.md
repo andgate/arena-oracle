@@ -27,19 +27,6 @@ pnpm install
 
 If you already cloned the repo before installing Git LFS, run `git lfs pull` after `git lfs install` to fetch any LFS-backed assets.
 
-When `pnpm approve-builds` opens, approve build scripts for:
-
-- `better-sqlite3`
-- `esbuild`
-
-This is not an every-install step. You only need to approve builds when `pnpm` reports ignored build scripts or when a new script-running dependency is added.
-
-If a native dependency was installed before its build script was approved, repair it with:
-
-```bash
-pnpm rebuild better-sqlite3
-```
-
 ## Linear & GitHub Integration
 
 Linear and GitHub are integrated. Linear will automatically transition issue statuses based on branch and PR activity:

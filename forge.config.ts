@@ -9,7 +9,7 @@ import { DepType, Walker } from "flora-colossus"
 import { cp, mkdir } from "node:fs/promises"
 import path from "node:path"
 
-const externalNativeDependencies = ["better-sqlite3"]
+const externalNativeDependencies = ["better-sqlite3", "keytar"]
 
 type WalkerWithModules = {
   modules: Array<{ name: string }>
