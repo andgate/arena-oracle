@@ -6,9 +6,12 @@ import { ProviderOnboardingView } from "@renderer/components/onboarding/Provider
 import { SettingsViews } from "@renderer/components/settings/SettingsViews"
 import { ProvidersProvider, useProviders } from "@renderer/hooks/use-providers"
 import { SettingsProvider, useSettings } from "@renderer/hooks/use-settings"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { type ReactNode, useState, useEffect } from "react"
 import { createRoot } from "react-dom/client"
 import "../styles/globals.css"
+
+const queryClient = new QueryClient()
 
 const HISTORY_SESSIONS = [
   { id: "goo-145", title: "Retrieve GOO-145 from Linear" },
@@ -129,11 +132,13 @@ function getViewTitle(activeView: AppView, selectedHistoryId: string | null) {
 
 function AppProviders({ children }: { children: ReactNode }) {
   return (
-    <SettingsProvider>
-      <ProvidersProvider>
-        <ChatProvider>{children}</ChatProvider>
-      </ProvidersProvider>
-    </SettingsProvider>
+    <QueryClientProvider client={queryClient}>
+      <SettingsProvider>
+        <ProvidersProvider>
+          <ChatProvider>{children}</ChatProvider>
+        </ProvidersProvider>
+      </SettingsProvider>
+    </QueryClientProvider>
   )
 }
 

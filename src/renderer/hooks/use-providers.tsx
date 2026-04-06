@@ -1,15 +1,17 @@
 import {
+  useAddProviderProfileMutation,
+  useProvidersStateQuery,
+  useRemoveProviderProfileMutation,
+  useSelectProviderProfileMutation,
+  useSetProviderApiKeyMutation,
+  useUpdateProviderProfileMutation,
+} from "@renderer/queries/providers-query"
+import {
   CreateProviderProfileInput,
   ProviderProfile,
   UpdateProviderProfileInput,
 } from "@shared/electron-types"
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react"
+import { createContext, ReactNode, useContext } from "react"
 
 interface UseProvidersResult {
   error: Error | null
@@ -30,55 +32,22 @@ interface UseProvidersResult {
 const ProvidersContext = createContext<UseProvidersResult | null>(null)
 
 export function ProvidersProvider({ children }: { children: ReactNode }) {
-  const [error, setError] = useState<Error | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [profiles, setProfiles] = useState<Record<string, ProviderProfile>>({})
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
-    null,
-  )
+  const providersStateQuery = useProvidersStateQuery()
+  const addProfileMutation = useAddProviderProfileMutation()
+  const updateProfileMutation = useUpdateProviderProfileMutation()
+  const removeProfileMutation = useRemoveProviderProfileMutation()
+  const selectProfileMutation = useSelectProviderProfileMutation()
+  const setApiKeyMutation = useSetProviderApiKeyMutation()
 
-  useEffect(() => {
-    const loadProviders = async () => {
-      try {
-        const [nextProfiles, nextSelectedProfileId] = await Promise.all([
-          window.mtgaAPI.providers.getProfiles(),
-          window.mtgaAPI.providers.getSelectedProfileId(),
-        ])
-        setProfiles(nextProfiles)
-        setSelectedProfileId(nextSelectedProfileId)
-        setError(null)
-      } catch (nextError: unknown) {
-        setError(
-          nextError instanceof Error
-            ? nextError
-            : new Error("Failed to load provider profiles."),
-        )
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadProviders().catch(console.error)
-  }, [])
+  const profiles = providersStateQuery.data?.profiles ?? {}
+  const selectedProfileId = providersStateQuery.data?.selectedProfileId ?? null
 
   const selectProfile = async (id: string) => {
-    await window.mtgaAPI.providers.setSelectedProfileId(id)
-    setSelectedProfileId(id)
-    setError(null)
+    await selectProfileMutation.mutateAsync(id)
   }
 
   const addProfile = async (profile: CreateProviderProfileInput) => {
-    const nextProfile = await window.mtgaAPI.providers.addProfile(profile)
-    const nextSelectedProfileId =
-      await window.mtgaAPI.providers.getSelectedProfileId()
-
-    setProfiles((current) => ({
-      ...current,
-      [nextProfile.id]: nextProfile,
-    }))
-    setSelectedProfileId(nextSelectedProfileId)
-    setError(null)
-
+    const { nextProfile } = await addProfileMutation.mutateAsync(profile)
     return nextProfile
   }
 
@@ -86,52 +55,39 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     id: string,
     updates: UpdateProviderProfileInput,
   ) => {
-    const nextProfile = await window.mtgaAPI.providers.updateProfile(id, updates)
-
-    setProfiles((current) => ({
-      ...current,
-      [id]: nextProfile,
-    }))
-    setError(null)
-
+    const { nextProfile } = await updateProfileMutation.mutateAsync({
+      id,
+      updates,
+    })
     return nextProfile
   }
 
   const removeProfile = async (id: string) => {
-    await window.mtgaAPI.providers.removeProfile(id)
-    const nextSelectedProfileId =
-      await window.mtgaAPI.providers.getSelectedProfileId()
-
-    setProfiles((current) => {
-      const next = { ...current }
-      delete next[id]
-      return next
-    })
-    setSelectedProfileId(nextSelectedProfileId)
-    setError(null)
+    await removeProfileMutation.mutateAsync(id)
   }
 
   const setApiKey = async (id: string, apiKey: string) => {
-    await window.mtgaAPI.providers.setApiKey(id, apiKey)
-    setProfiles((current) => ({
-      ...current,
-      [id]: {
-        ...current[id],
-        hasApiKey: true,
-      },
-    }))
-    setError(null)
+    await setApiKeyMutation.mutateAsync({ id, apiKey })
   }
 
   const selectedProfile = selectedProfileId
-    ? profiles[selectedProfileId] ?? null
+    ? (profiles[selectedProfileId] ?? null)
     : null
+
+  const error =
+    providersStateQuery.error ??
+    addProfileMutation.error ??
+    updateProfileMutation.error ??
+    removeProfileMutation.error ??
+    selectProfileMutation.error ??
+    setApiKeyMutation.error ??
+    null
 
   return (
     <ProvidersContext.Provider
       value={{
         error,
-        isLoading,
+        isLoading: providersStateQuery.isLoading,
         profiles,
         selectedProfile,
         selectedProfileId,

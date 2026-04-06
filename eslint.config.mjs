@@ -1,8 +1,10 @@
+import pluginQuery from "@tanstack/eslint-plugin-query"
 import tsPlugin from "@typescript-eslint/eslint-plugin"
 import tsParser from "@typescript-eslint/parser"
 import globals from "globals"
 
 export default [
+  ...pluginQuery.configs["flat/recommended"],
   {
     // Note: there should be no other properties in this object
     ignores: [".github/CODEOWNERS", ".tsbuild", ".vite", "coverage"],
