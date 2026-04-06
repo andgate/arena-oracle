@@ -1,4 +1,7 @@
-import { ProviderProfile } from "@shared/electron-types"
+import {
+  CreateProviderProfileInput,
+  ProviderProfile,
+} from "@shared/electron-types"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { IKeytarService } from "../keytar/KeytarService.interface"
 import { FakeStoreService } from "../store/StoreService.mock"
@@ -25,12 +28,13 @@ class FakeKeytarService implements IKeytarService {
 }
 
 function createProfile(
-  overrides: Partial<Omit<ProviderProfile, "id">> = {},
-): Omit<ProviderProfile, "id"> {
+  overrides: Partial<CreateProviderProfileInput> = {},
+): CreateProviderProfileInput {
   return {
     name: "Groq Primary",
     providerKey: "groq",
     selectedModel: "openai/gpt-oss-120b",
+    apiKey: "secret-key",
     ...overrides,
   }
 }
@@ -51,17 +55,22 @@ describe("ProviderService", () => {
     const keytar = new FakeKeytarService()
     const service = new ProviderService(store, keytar)
 
-    const profile = service.addProfile(createProfile())
-    await service.setApiKey(profile.id, "secret-key")
-
-    expect(profile).toEqual({
+    const profile = await service.addProfile(createProfile())
+    const storedProfile: ProviderProfile = {
       id: profileId,
       name: "Groq Primary",
       providerKey: "groq",
       selectedModel: "openai/gpt-oss-120b",
+      hasApiKey: true,
+    }
+
+    expect(profile).toEqual(storedProfile)
+    expect(service.getProfiles()).toEqual({
+      [profileId]: storedProfile,
     })
-    expect(service.getProfiles()).toEqual([profile])
-    expect(store.get("providerProfiles")).toEqual([profile])
+    expect(store.get("providerProfiles")).toEqual({
+      [profileId]: storedProfile,
+    })
     expect(JSON.stringify(store.get("providerProfiles"))).not.toContain(
       "secret-key",
     )
@@ -69,7 +78,7 @@ describe("ProviderService", () => {
     expect(await service.getApiKey(profile.id)).toBe("secret-key")
   })
 
-  it("updates an existing profile in the store", () => {
+  it("updates an existing profile in the store", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
     const service = new ProviderService(
@@ -77,33 +86,56 @@ describe("ProviderService", () => {
       new FakeKeytarService(),
     )
 
-    service.addProfile(createProfile())
+    await service.addProfile(createProfile())
 
-    expect(
+    await expect(
       service.updateProfile(profileId, {
         name: "OpenRouter Backup",
         providerKey: "openrouter",
         selectedModel: "openrouter/auto",
+        apiKey: "new-secret",
       }),
-    ).toEqual({
+    ).resolves.toEqual({
       id: profileId,
       name: "OpenRouter Backup",
       providerKey: "openrouter",
       selectedModel: "openrouter/auto",
+      hasApiKey: true,
     })
   })
 
-  it("throws when updating a missing profile", () => {
+  it("throws when updating a missing profile", async () => {
     const service = new ProviderService(
       new FakeStoreService(),
       new FakeKeytarService(),
     )
 
-    expect(() =>
+    await expect(
       service.updateProfile(profileId, {
         name: "Missing Profile",
+        providerKey: "groq",
+        selectedModel: "openai/gpt-oss-120b",
       }),
-    ).toThrow(`Provider profile "${profileId}" was not found.`)
+    ).rejects.toThrow(`Provider profile "${profileId}" was not found.`)
+  })
+
+  it("throws when changing provider without a replacement API key", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
+
+    const service = new ProviderService(
+      new FakeStoreService(),
+      new FakeKeytarService(),
+    )
+
+    await service.addProfile(createProfile())
+
+    await expect(
+      service.updateProfile(profileId, {
+        name: "OpenRouter Backup",
+        providerKey: "openrouter",
+        selectedModel: "openrouter/auto",
+      }),
+    ).rejects.toThrow("Changing provider requires a new API key.")
   })
 
   it("removes a profile and deletes its stored API key", async () => {
@@ -113,13 +145,12 @@ describe("ProviderService", () => {
     const keytar = new FakeKeytarService()
     const service = new ProviderService(store, keytar)
 
-    const profile = service.addProfile(createProfile())
-    await service.setApiKey(profile.id, "secret-key")
+    const profile = await service.addProfile(createProfile())
 
     await service.removeProfile(profile.id)
 
-    expect(service.getProfiles()).toEqual([])
-    expect(store.get("providerProfiles")).toEqual([])
+    expect(service.getProfiles()).toEqual({})
+    expect(store.get("providerProfiles")).toEqual({})
     expect(service.getSelectedProfileId()).toBe(null)
     await expect(service.getApiKey(profile.id)).rejects.toThrow(
       `Provider profile "${profileId}" was not found.`,
@@ -137,19 +168,20 @@ describe("ProviderService", () => {
     )
   })
 
-  it("persists an explicitly selected profile", () => {
+  it("persists an explicitly selected profile", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
     const store = new FakeStoreService()
     const service = new ProviderService(store, new FakeKeytarService())
 
-    service.addProfile(createProfile())
+    await service.addProfile(createProfile())
     vi.spyOn(crypto, "randomUUID").mockReturnValue(openRouterProfileId)
-    const profile = service.addProfile(
+    const profile = await service.addProfile(
       createProfile({
         name: "OpenRouter",
         providerKey: "openrouter",
         selectedModel: "openrouter/auto",
+        apiKey: "openrouter-secret",
       }),
     )
 
@@ -168,19 +200,22 @@ describe("ProviderService", () => {
     )
   })
 
-  it("falls back to the first profile when the selected profile is deleted", async () => {
+  it("falls back to the alphabetically first profile when the selected profile is deleted", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
     const store = new FakeStoreService()
     const service = new ProviderService(store, new FakeKeytarService())
-    const firstProfile = service.addProfile(createProfile())
+    const firstProfile = await service.addProfile(
+      createProfile({ name: "Alpha Profile" }),
+    )
 
     vi.spyOn(crypto, "randomUUID").mockReturnValue(openRouterProfileId)
-    const secondProfile = service.addProfile(
+    const secondProfile = await service.addProfile(
       createProfile({
-        name: "OpenRouter",
+        name: "Zulu Profile",
         providerKey: "openrouter",
         selectedModel: "openrouter/auto",
+        apiKey: "openrouter-secret",
       }),
     )
     service.setSelectedProfileId(secondProfile.id)
@@ -191,15 +226,51 @@ describe("ProviderService", () => {
     expect(store.get("selectedProviderProfileId")).toBe(firstProfile.id)
   })
 
-  it("normalizes an invalid stored selected profile id to the first profile", () => {
+  it("normalizes an invalid stored selected profile id to the alphabetically first profile", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
     const store = new FakeStoreService()
     const service = new ProviderService(store, new FakeKeytarService())
-    const profile = service.addProfile(createProfile())
+    const firstProfile = await service.addProfile(
+      createProfile({ name: "Alpha Profile" }),
+    )
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(openRouterProfileId)
+    await service.addProfile(
+      createProfile({
+        name: "Zulu Profile",
+        providerKey: "openrouter",
+        selectedModel: "openrouter/auto",
+        apiKey: "openrouter-secret",
+      }),
+    )
     store.set("selectedProviderProfileId", "missing-profile-id")
 
-    expect(service.getSelectedProfileId()).toBe(profile.id)
-    expect(store.get("selectedProviderProfileId")).toBe(profile.id)
+    expect(service.getSelectedProfileId()).toBe(firstProfile.id)
+    expect(store.get("selectedProviderProfileId")).toBe(firstProfile.id)
+  })
+
+  it("stores hasApiKey as false before the password is saved", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
+
+    const store = new FakeStoreService()
+    const keytar = new FakeKeytarService()
+    const service = new ProviderService(store, keytar)
+
+    const originalSetApiKey = service.setApiKey.bind(service)
+    vi.spyOn(service, "setApiKey").mockImplementation(async (id, apiKey) => {
+      expect(store.get("providerProfiles")).toEqual({
+        [id]: {
+          id,
+          name: "Groq Primary",
+          providerKey: "groq",
+          selectedModel: "openai/gpt-oss-120b",
+          hasApiKey: false,
+        },
+      })
+
+      await originalSetApiKey(id, apiKey)
+    })
+
+    await service.addProfile(createProfile())
   })
 })

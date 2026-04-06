@@ -1,8 +1,11 @@
+import { useProviders } from "@renderer/hooks/use-providers"
+import { getLanguageModelForProfile } from "@renderer/lib/ai"
 import { coachingSnapshot$ } from "@renderer/streams"
 import { CoachingSnapshot } from "@shared/coaching-types"
 import { ModelMessage, streamText } from "ai"
 import {
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useMemo,
@@ -10,7 +13,6 @@ import {
   useState,
 } from "react"
 import SYSTEM_PROMPT from "./coaching-prompt.md"
-import { ChatModel, getModel } from "@renderer/lib/ai"
 
 // ============================================================
 // Types
@@ -28,8 +30,6 @@ export interface ChatMessage {
 interface ChatContextValue {
   messages: ChatMessage[]
   isLoading: boolean
-  model: ChatModel
-  setModel: (model: ChatModel) => void
   sendMessage: (content: string) => Promise<void>
 }
 
@@ -204,13 +204,13 @@ export function useChatContext(): ChatContextValue {
 // Provider
 // ============================================================
 
-export function ChatProvider({ children }: { children: React.ReactNode }) {
+export function ChatProvider({ children }: { children: ReactNode }) {
+  const { selectedProfile } = useProviders()
   const [messages, setMessages] = useState<ChatMessage[]>([
     INITIAL_SYSTEM_MESSAGE,
   ])
   const [incomingMessage, setIncomingMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState<ChatModel>("free")
 
   const visibleMessages: ChatMessage[] = useMemo(() => {
     if (incomingMessage === null) return messages
@@ -227,14 +227,26 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     messagesRef.current = messages
   }, [messages])
 
+  const selectedProfileRef = useRef(selectedProfile)
+  useEffect(() => {
+    selectedProfileRef.current = selectedProfile
+  }, [selectedProfile])
+
   // ---- LLM call ----
   const triggerLLM = async (newMessages: ChatMessage[]) => {
+    const activeProfile = selectedProfileRef.current
+
+    if (!activeProfile) {
+      return
+    }
+
     setIsLoading(true)
     setIncomingMessage("")
 
     try {
+      const model = await getLanguageModelForProfile(activeProfile)
       const result = streamText({
-        model: getModel(model),
+        model,
         messages: toApiMessages(newMessages),
       })
 
@@ -276,7 +288,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
       const updated = [...messagesRef.current, snapshotMsg]
       setMessages(updated)
-      triggerLLM(updated)
+      triggerLLM(updated).catch(console.error)
     })
 
     return () => sub.unsubscribe()
@@ -284,6 +296,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // ---- User message ----
   const sendMessage = async (content: string) => {
+    if (!selectedProfileRef.current) {
+      return
+    }
+
     const userMsg: ChatMessage = {
       id: generateId(),
       role: "user",
@@ -299,8 +315,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       value={{
         messages: visibleMessages,
         isLoading,
-        model,
-        setModel,
         sendMessage,
       }}
     >

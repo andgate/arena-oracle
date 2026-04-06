@@ -1,5 +1,8 @@
-import { fetchModelsForProfile } from "@renderer/lib/ai"
-import { ProviderProfile } from "@shared/electron-types"
+import {
+  CreateProviderProfileInput,
+  ProviderProfile,
+  UpdateProviderProfileInput,
+} from "@shared/electron-types"
 import {
   createContext,
   ReactNode,
@@ -11,20 +14,17 @@ import {
 interface UseProvidersResult {
   error: Error | null
   isLoading: boolean
-  profiles: ProviderProfile[]
+  profiles: Record<string, ProviderProfile>
   selectedProfile: ProviderProfile | null
-  addProfile: (
-    profile: Omit<ProviderProfile, "id">,
-  ) => Promise<ProviderProfile>
+  selectedProfileId: string | null
+  addProfile: (profile: CreateProviderProfileInput) => Promise<ProviderProfile>
   updateProfile: (
     id: string,
-    updates: Partial<Omit<ProviderProfile, "id">>,
+    updates: UpdateProviderProfileInput,
   ) => Promise<ProviderProfile>
   removeProfile: (id: string) => Promise<void>
   selectProfile: (id: string) => Promise<void>
-  getApiKey: (id: string) => Promise<string | null>
   setApiKey: (id: string, apiKey: string) => Promise<void>
-  fetchModels: (id: string) => Promise<string[]>
 }
 
 const ProvidersContext = createContext<UseProvidersResult | null>(null)
@@ -32,7 +32,7 @@ const ProvidersContext = createContext<UseProvidersResult | null>(null)
 export function ProvidersProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [profiles, setProfiles] = useState<ProviderProfile[]>([])
+  const [profiles, setProfiles] = useState<Record<string, ProviderProfile>>({})
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
     null,
   )
@@ -58,7 +58,7 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    void loadProviders()
+    loadProviders().catch(console.error)
   }, [])
 
   const selectProfile = async (id: string) => {
@@ -67,12 +67,15 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     setError(null)
   }
 
-  const addProfile = async (profile: Omit<ProviderProfile, "id">) => {
+  const addProfile = async (profile: CreateProviderProfileInput) => {
     const nextProfile = await window.mtgaAPI.providers.addProfile(profile)
     const nextSelectedProfileId =
       await window.mtgaAPI.providers.getSelectedProfileId()
 
-    setProfiles((current) => [...current, nextProfile])
+    setProfiles((current) => ({
+      ...current,
+      [nextProfile.id]: nextProfile,
+    }))
     setSelectedProfileId(nextSelectedProfileId)
     setError(null)
 
@@ -81,13 +84,14 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = async (
     id: string,
-    updates: Partial<Omit<ProviderProfile, "id">>,
+    updates: UpdateProviderProfileInput,
   ) => {
     const nextProfile = await window.mtgaAPI.providers.updateProfile(id, updates)
 
-    setProfiles((current) =>
-      current.map((profile) => (profile.id === id ? nextProfile : profile)),
-    )
+    setProfiles((current) => ({
+      ...current,
+      [id]: nextProfile,
+    }))
     setError(null)
 
     return nextProfile
@@ -98,33 +102,30 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     const nextSelectedProfileId =
       await window.mtgaAPI.providers.getSelectedProfileId()
 
-    setProfiles((current) => current.filter((profile) => profile.id !== id))
+    setProfiles((current) => {
+      const next = { ...current }
+      delete next[id]
+      return next
+    })
     setSelectedProfileId(nextSelectedProfileId)
     setError(null)
   }
 
-  const getApiKey = (id: string) => window.mtgaAPI.providers.getApiKey(id)
-
   const setApiKey = async (id: string, apiKey: string) => {
     await window.mtgaAPI.providers.setApiKey(id, apiKey)
+    setProfiles((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        hasApiKey: true,
+      },
+    }))
     setError(null)
   }
 
-  const fetchModels = async (id: string) => {
-    const profile = profiles.find((candidate) => candidate.id === id)
-
-    if (!profile) {
-      throw new Error(`Provider profile "${id}" was not found.`)
-    }
-
-    const response = await fetchModelsForProfile(profile)
-    setError(null)
-
-    return response
-  }
-
-  const selectedProfile =
-    profiles.find((profile) => profile.id === selectedProfileId) ?? null
+  const selectedProfile = selectedProfileId
+    ? profiles[selectedProfileId] ?? null
+    : null
 
   return (
     <ProvidersContext.Provider
@@ -133,13 +134,12 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
         isLoading,
         profiles,
         selectedProfile,
+        selectedProfileId,
         addProfile,
         updateProfile,
         removeProfile,
         selectProfile,
-        getApiKey,
         setApiKey,
-        fetchModels,
       }}
     >
       {children}

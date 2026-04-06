@@ -27,19 +27,34 @@ export interface ProviderProfile {
   name: string
   providerKey: ProviderKey
   selectedModel: string
+  hasApiKey: boolean
+}
+
+export interface CreateProviderProfileInput {
+  name: string
+  providerKey: ProviderKey
+  selectedModel: string
+  apiKey: string
+}
+
+export interface UpdateProviderProfileInput {
+  name: string
+  providerKey: ProviderKey
+  selectedModel: string
+  apiKey?: string
 }
 
 export interface ProviderStoreState {
-  providerProfiles: ProviderProfile[]
+  providerProfiles: Record<string, ProviderProfile>
   selectedProviderProfileId: string | null
 }
 
 export interface ProvidersAPI {
-  getProfiles: () => Promise<ProviderProfile[]>
-  addProfile: (profile: Omit<ProviderProfile, "id">) => Promise<ProviderProfile>
+  getProfiles: () => Promise<Record<string, ProviderProfile>>
+  addProfile: (profile: CreateProviderProfileInput) => Promise<ProviderProfile>
   updateProfile: (
     id: string,
-    updates: Partial<Omit<ProviderProfile, "id">>,
+    updates: UpdateProviderProfileInput,
   ) => Promise<ProviderProfile>
   removeProfile: (id: string) => Promise<void>
   getSelectedProfileId: () => Promise<string | null>
