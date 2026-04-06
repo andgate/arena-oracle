@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react"
+import { useProviders } from "@renderer/hooks/use-providers"
+import { KeyboardEvent, useEffect, useRef, useState } from "react"
 import { useChatContext } from "./ChatProvider"
-import { ChatModel } from "@renderer/lib/ai"
 
 export function ChatViewer() {
-  const { messages, isLoading, model, setModel, sendMessage } = useChatContext()
+  const { profiles, selectedProfileId, selectProfile } = useProviders()
+  const { messages, isLoading, sendMessage } = useChatContext()
+  const sortedProfiles = Object.values(profiles).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
   const [input, setInput] = useState("")
   const [revealedSnapshots, setRevealedSnapshots] = useState<Set<string>>(
     new Set(),
@@ -21,10 +25,10 @@ export function ChatViewer() {
     await sendMessage(trimmed)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSend()
+      handleSend().catch(console.error)
     }
   }
 
@@ -140,8 +144,10 @@ export function ChatViewer() {
         }}
       >
         <select
-          value={model}
-          onChange={(e) => setModel(e.target.value as ChatModel)}
+          value={selectedProfileId ?? ""}
+          onChange={(e) => {
+            selectProfile(e.target.value).catch(console.error)
+          }}
           style={{
             padding: "0 8px",
             background: "#1a1a1a",
@@ -151,8 +157,11 @@ export function ChatViewer() {
             fontSize: 13,
           }}
         >
-          <option value="groq">Groq</option>
-          <option value="free">Free</option>
+          {sortedProfiles.map((profile) => (
+            <option key={profile.id} value={profile.id}>
+              {profile.name}
+            </option>
+          ))}
         </select>
         <textarea
           value={input}
@@ -172,7 +181,9 @@ export function ChatViewer() {
           }}
         />
         <button
-          onClick={handleSend}
+          onClick={() => {
+            handleSend().catch(console.error)
+          }}
           disabled={isLoading || !input.trim()}
           style={{
             padding: "0 16px",

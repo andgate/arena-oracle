@@ -2,10 +2,11 @@ import { AppLayout } from "@renderer/app/layout"
 import { AppSidebar, type AppView } from "@renderer/components/app-sidebar"
 import { ChatProvider } from "@renderer/components/chat/ChatProvider"
 import { ChatViewer } from "@renderer/components/chat/ChatViewer"
-import { SettingsView } from "@renderer/components/SettingsView"
-import { ProvidersProvider } from "@renderer/hooks/use-providers"
+import { ProviderOnboardingView } from "@renderer/components/onboarding/ProviderOnboardingView"
+import { SettingsViews } from "@renderer/components/settings/SettingsViews"
+import { ProvidersProvider, useProviders } from "@renderer/hooks/use-providers"
 import { SettingsProvider, useSettings } from "@renderer/hooks/use-settings"
-import { type ReactNode, useEffect, useState } from "react"
+import { type ReactNode, useState, useEffect } from "react"
 import { createRoot } from "react-dom/client"
 import "../styles/globals.css"
 
@@ -43,6 +44,41 @@ function PlaceholderView({
   )
 }
 
+function ChatRoute() {
+  const { isLoading, profiles, selectedProfileId } = useProviders()
+  const hasProfiles = Object.keys(profiles).length > 0
+
+  if (isLoading) {
+    return (
+      <PlaceholderView
+        eyebrow="Chat"
+        title="Loading providers"
+        description="Arena Oracle is checking your saved provider profiles."
+      />
+    )
+  }
+
+  if (!hasProfiles) {
+    return <ProviderOnboardingView />
+  }
+
+  if (selectedProfileId === null) {
+    return (
+      <PlaceholderView
+        eyebrow="Chat"
+        title="Loading chat"
+        description="Arena Oracle is restoring your selected provider profile."
+      />
+    )
+  }
+
+  return (
+    <div className="min-h-0 flex-1">
+      <ChatViewer />
+    </div>
+  )
+}
+
 function AppContent({
   activeView,
   selectedHistoryId,
@@ -51,11 +87,7 @@ function AppContent({
   selectedHistoryId: string | null
 }) {
   if (activeView === "chat") {
-    return (
-      <div className="min-h-0 flex-1">
-        <ChatViewer />
-      </div>
-    )
+    return <ChatRoute />
   }
 
   if (activeView === "history") {
@@ -76,7 +108,7 @@ function AppContent({
     )
   }
 
-  if (activeView === "settings") return <SettingsView />
+  if (activeView === "settings") return <SettingsViews />
 
   return (
     <PlaceholderView

@@ -1,4 +1,9 @@
-import { ProviderProfile, type AppStoreSchema } from "@shared/electron-types"
+import {
+  CreateProviderProfileInput,
+  ProviderProfile,
+  UpdateProviderProfileInput,
+  type AppStoreSchema,
+} from "@shared/electron-types"
 import { inject, injectable, singleton } from "tsyringe"
 import { IKeytarService } from "../keytar/KeytarService.interface"
 import { IStoreService } from "../store/StoreService.interface"
@@ -14,64 +19,90 @@ export class ProviderService implements IProviderService {
     @inject(IKeytarService) private readonly keytarService: IKeytarService,
   ) {}
 
-  getProfiles(): ProviderProfile[] {
-    return [...this.storeService.get("providerProfiles")]
+  getProfiles(): Record<string, ProviderProfile> {
+    return this.storeService.get("providerProfiles")
   }
 
-  addProfile(profile: Omit<ProviderProfile, "id">): ProviderProfile {
-    const nextProfile: ProviderProfile = {
-      ...profile,
-      id: crypto.randomUUID(),
+  async addProfile(
+    profile: CreateProviderProfileInput,
+  ): Promise<ProviderProfile> {
+    const apiKey = profile.apiKey.trim()
+
+    if (!apiKey) {
+      throw new Error("Provider profiles require an API key.")
     }
 
-    const profiles = [...this.getProfiles(), nextProfile]
-    this.storeProfiles(profiles)
+    const nextProfile: ProviderProfile = {
+      id: crypto.randomUUID(),
+      name: profile.name,
+      providerKey: profile.providerKey,
+      selectedModel: profile.selectedModel,
+      hasApiKey: false,
+    }
+
+    this.storeProfilesById({
+      ...this.storeService.get("providerProfiles"),
+      [nextProfile.id]: nextProfile,
+    })
 
     if (!this.storeService.get("selectedProviderProfileId")) {
       this.storeSelectedProfileId(nextProfile.id)
     }
 
-    return nextProfile
+    await this.setApiKey(nextProfile.id, apiKey)
+
+    return this.getProfileById(nextProfile.id)
   }
 
-  updateProfile(
+  async updateProfile(
     id: string,
-    updates: Partial<Omit<ProviderProfile, "id">>,
-  ): ProviderProfile {
-    const profiles = this.getProfiles()
-    const index = profiles.findIndex((profile) => profile.id === id)
+    updates: UpdateProviderProfileInput,
+  ): Promise<ProviderProfile> {
+    const currentProfile = this.getProfileById(id)
+    const providerChanged = currentProfile.providerKey !== updates.providerKey
+    const nextApiKey = updates.apiKey?.trim()
 
-    if (index < 0) {
-      throw new Error(`Provider profile "${id}" was not found.`)
+    if (providerChanged && !nextApiKey) {
+      throw new Error("Changing provider requires a new API key.")
     }
 
-    const nextProfile = {
-      ...profiles[index],
-      ...updates,
-      id,
+    this.storeProfilesById({
+      ...this.storeService.get("providerProfiles"),
+      [id]: {
+        id,
+        name: updates.name,
+        providerKey: updates.providerKey,
+        selectedModel: updates.selectedModel,
+        hasApiKey: providerChanged ? false : currentProfile.hasApiKey,
+      },
+    })
+
+    if (nextApiKey) {
+      await this.setApiKey(id, nextApiKey)
     }
 
-    profiles[index] = nextProfile
-    this.storeProfiles(profiles)
-
-    return nextProfile
+    return this.getProfileById(id)
   }
 
   async removeProfile(id: string): Promise<void> {
-    const profiles = this.getProfiles()
-    const nextProfiles = profiles.filter((profile) => profile.id !== id)
+    const profiles = this.storeService.get("providerProfiles")
 
-    if (nextProfiles.length === profiles.length) {
+    if (!profiles[id]) {
       throw new Error(`Provider profile "${id}" was not found.`)
     }
 
-    this.storeProfiles(nextProfiles)
-    this.normalizeSelectedProfileId(nextProfiles)
+    const nextProfilesById = { ...profiles }
+    delete nextProfilesById[id]
+
+    this.storeProfilesById(nextProfilesById)
+    this.normalizeSelectedProfileId(nextProfilesById)
     await this.keytarService.deletePassword(KEYTAR_SERVICE_NAME, id)
   }
 
   getSelectedProfileId(): string | null {
-    return this.normalizeSelectedProfileId(this.getProfiles())
+    return this.normalizeSelectedProfileId(
+      this.storeService.get("providerProfiles"),
+    )
   }
 
   setSelectedProfileId(id: string): void {
@@ -86,12 +117,26 @@ export class ProviderService implements IProviderService {
   }
 
   async setApiKey(id: string, apiKey: string): Promise<void> {
-    this.getProfileById(id)
-    await this.keytarService.setPassword(KEYTAR_SERVICE_NAME, id, apiKey)
+    const trimmedApiKey = apiKey.trim()
+
+    if (!trimmedApiKey) {
+      throw new Error("Provider profiles require an API key.")
+    }
+
+    const profile = this.getProfileById(id)
+    await this.keytarService.setPassword(KEYTAR_SERVICE_NAME, id, trimmedApiKey)
+
+    this.storeProfilesById({
+      ...this.storeService.get("providerProfiles"),
+      [id]: {
+        ...profile,
+        hasApiKey: true,
+      },
+    })
   }
 
   private getProfileById(id: string): ProviderProfile {
-    const profile = this.getProfiles().find((candidate) => candidate.id === id)
+    const profile = this.storeService.get("providerProfiles")[id]
 
     if (!profile) {
       throw new Error(`Provider profile "${id}" was not found.`)
@@ -101,24 +146,26 @@ export class ProviderService implements IProviderService {
   }
 
   private normalizeSelectedProfileId(
-    profiles: ProviderProfile[],
+    profiles: Record<string, ProviderProfile>,
   ): string | null {
     const selectedProfileId = this.storeService.get("selectedProviderProfileId")
 
-    if (
-      selectedProfileId &&
-      profiles.some((profile) => profile.id === selectedProfileId)
-    ) {
+    if (selectedProfileId && profiles[selectedProfileId]) {
       return selectedProfileId
     }
 
-    const fallbackProfileId = profiles[0]?.id ?? null
+    const fallbackProfileId =
+      Object.values(profiles).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      )[0]?.id ?? null
     this.storeSelectedProfileId(fallbackProfileId)
 
     return fallbackProfileId
   }
 
-  private storeProfiles(profiles: AppStoreSchema["providerProfiles"]): void {
+  private storeProfilesById(
+    profiles: AppStoreSchema["providerProfiles"],
+  ): void {
     this.storeService.set("providerProfiles", profiles)
   }
 

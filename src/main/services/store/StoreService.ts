@@ -6,7 +6,7 @@ import { IStoreService } from "./StoreService.interface"
 const defaultStore: AppStoreSchema = {
   alwaysOnTop: false,
   developerMode: false,
-  providerProfiles: [],
+  providerProfiles: {},
   selectedProviderProfileId: null,
 }
 
@@ -28,11 +28,11 @@ export class StoreService implements IStoreService {
         default: defaultStore.developerMode,
       },
       providerProfiles: {
-        type: "array",
+        type: "object",
         default: defaultStore.providerProfiles,
-        items: {
+        additionalProperties: {
           type: "object",
-          required: ["id", "name", "providerKey", "selectedModel"],
+          required: ["id", "name", "providerKey", "selectedModel", "hasApiKey"],
           additionalProperties: false,
           properties: {
             id: { type: "string" },
@@ -42,6 +42,7 @@ export class StoreService implements IStoreService {
               enum: ["groq", "openrouter"],
             },
             selectedModel: { type: "string" },
+            hasApiKey: { type: "boolean" },
           },
         },
       },

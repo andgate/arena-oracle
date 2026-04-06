@@ -5,7 +5,7 @@ export class FakeStoreService implements IStoreService {
   private values: AppStoreSchema = {
     alwaysOnTop: false,
     developerMode: false,
-    providerProfiles: [],
+    providerProfiles: {},
     selectedProviderProfileId: null,
   }
 

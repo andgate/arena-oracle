@@ -1,3 +1,6 @@
 {
-  "python-envs.defaultEnvManager": "ms-python.python:pyenv"
+  "python-envs.defaultEnvManager": "ms-python.python:pyenv",
+  "tailwindCSS.files.exclude": [
+    "**/src/renderer/components/ui/**",
+  ]
 }
