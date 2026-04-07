@@ -3,6 +3,10 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { ProviderKey, ProviderProfile } from "@shared/electron-types"
 import type { LanguageModel } from "ai"
 
+// ----------------------------------------------------------------------------
+// Types
+// ----------------------------------------------------------------------------
+
 type ModelsResponse = {
   data?: Array<{
     id?: unknown
@@ -13,6 +17,10 @@ type ProviderModelsListConfig = {
   modelsUrl: string
   requiresApiKey: boolean
 }
+
+// ----------------------------------------------------------------------------
+// Provider configuration
+// ----------------------------------------------------------------------------
 
 export const providerModelsListConfig: Record<
   ProviderKey,
@@ -28,6 +36,10 @@ export const providerModelsListConfig: Record<
   },
 }
 
+// ----------------------------------------------------------------------------
+// Language model creation
+// ----------------------------------------------------------------------------
+
 export async function getLanguageModelForProfile(
   profile: ProviderProfile,
 ): Promise<LanguageModel> {
@@ -42,6 +54,23 @@ export async function getLanguageModelForProfile(
   return createLanguageModel(profile.providerKey, profile.selectedModel, apiKey)
 }
 
+function createLanguageModel(
+  providerKey: ProviderKey,
+  modelId: string,
+  apiKey: string,
+): LanguageModel {
+  switch (providerKey) {
+    case "groq":
+      return createGroq({ apiKey })(modelId)
+    case "openrouter":
+      return createOpenRouter({ apiKey }).chat(modelId)
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Model fetching
+// ----------------------------------------------------------------------------
+
 export async function fetchModelsForProfile(
   profile: ProviderProfile,
 ): Promise<string[]> {
@@ -55,19 +84,6 @@ export async function fetchModelsForProvider(
 ): Promise<string[]> {
   const response = await fetchProviderModelsEndpoint(providerKey, apiKey)
   return parseProviderModelsResponse(response, providerKey)
-}
-
-function createLanguageModel(
-  providerKey: ProviderKey,
-  modelId: string,
-  apiKey: string,
-): LanguageModel {
-  switch (providerKey) {
-    case "groq":
-      return createGroq({ apiKey })(modelId)
-    case "openrouter":
-      return createOpenRouter({ apiKey }).chat(modelId)
-  }
 }
 
 async function fetchProviderModelsResponse(
@@ -121,6 +137,10 @@ function getProviderModelsAuthHeaders(
 
   return { Authorization: `Bearer ${apiKey}` }
 }
+
+// ----------------------------------------------------------------------------
+// Model parsing
+// ----------------------------------------------------------------------------
 
 async function parseProviderModelsResponse(
   response: Response,
