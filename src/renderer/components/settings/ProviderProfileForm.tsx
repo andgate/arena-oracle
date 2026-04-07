@@ -17,21 +17,23 @@ import {
   SelectValue,
 } from "@renderer/components/ui/select"
 import { Spinner } from "@renderer/components/ui/spinner"
-import {
-  fetchModelsForProfile,
-  fetchModelsForProvider,
-  providerModelsListConfig,
-} from "@renderer/lib/ai"
+import { useModelList } from "@renderer/hooks/use-models-list"
+import { defaultProviderKey, providerConfig } from "@renderer/lib/ai"
 import {
   ProviderKey,
   ProviderProfile,
   UpdateProviderProfileInput,
 } from "@shared/electron-types"
-import { SubmitEventHandler, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { Control, Controller, useController, useForm } from "react-hook-form"
 
-const providerOptions: Record<ProviderKey, string> = {
-  groq: "Groq",
-  openrouter: "OpenRouter",
+const savedApiKeyMask = "************"
+
+type ProviderProfileFormValues = {
+  name: string
+  providerKey: ProviderKey
+  apiKey: string
+  selectedModel: string
 }
 
 type ProviderProfileFormProps = {
@@ -41,111 +43,116 @@ type ProviderProfileFormProps = {
   onSubmit: (values: UpdateProviderProfileInput) => Promise<void>
 }
 
+type ProviderApiKeyFieldProps = {
+  control: Control<ProviderProfileFormValues>
+  fieldId: string
+  hasStoredApiKey: boolean
+  label: string
+}
+
+function getProviderProfileFormValues(
+  profile: ProviderProfile | null,
+): ProviderProfileFormValues {
+  return {
+    name: profile?.name ?? "",
+    providerKey: profile?.providerKey ?? defaultProviderKey,
+    apiKey: "",
+    selectedModel: profile?.selectedModel ?? "",
+  }
+}
+
+function ProviderApiKeyField({
+  control,
+  fieldId,
+  hasStoredApiKey,
+  label,
+}: ProviderApiKeyFieldProps) {
+  const { field } = useController({
+    control,
+    name: "apiKey",
+  })
+  const [isEditing, setIsEditing] = useState(false)
+
+  useEffect(() => {
+    setIsEditing(false)
+  }, [hasStoredApiKey])
+
+  const showSavedApiKeyMask =
+    hasStoredApiKey && field.value === "" && !isEditing
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
+      <Input
+        id={fieldId}
+        name={field.name}
+        type="password"
+        value={showSavedApiKeyMask ? savedApiKeyMask : field.value}
+        onFocus={() => setIsEditing(true)}
+        onBlur={() => {
+          field.onBlur()
+
+          if (field.value === "") {
+            setIsEditing(false)
+          }
+        }}
+        onChange={(event) => {
+          setIsEditing(true)
+          field.onChange(event.target.value)
+        }}
+        placeholder={hasStoredApiKey ? "Saved API key" : "Paste your API key"}
+      />
+      {hasStoredApiKey ? (
+        <FieldDescription>
+          Leave this blank to keep the saved API key for this profile.
+        </FieldDescription>
+      ) : (
+        <FieldDescription>
+          This key is stored in the OS credential manager, not in app settings.
+        </FieldDescription>
+      )}
+    </Field>
+  )
+}
+
 export function ProviderProfileForm({
   initialProfile = null,
   isSubmitting = false,
   submitLabel,
   onSubmit,
 }: ProviderProfileFormProps) {
-  const [name, setName] = useState(initialProfile?.name ?? "")
-  const [providerKey, setProviderKey] = useState<ProviderKey>(
-    initialProfile?.providerKey ?? "groq",
-  )
-  const [apiKey, setApiKey] = useState("")
-  const [selectedModel, setSelectedModel] = useState(
-    initialProfile?.selectedModel ?? "",
-  )
-  const [availableModels, setAvailableModels] = useState<string[]>([])
-  const [isLoadingModels, setIsLoadingModels] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [modelFetchError, setModelFetchError] = useState<string | null>(null)
+  const form = useForm<ProviderProfileFormValues>({
+    defaultValues: getProviderProfileFormValues(initialProfile),
+  })
 
   useEffect(() => {
-    setName(initialProfile?.name ?? "")
-    setProviderKey(initialProfile?.providerKey ?? "groq")
-    setApiKey("")
-    setSelectedModel(initialProfile?.selectedModel ?? "")
-    setAvailableModels([])
-    setIsLoadingModels(false)
+    form.reset(getProviderProfileFormValues(initialProfile))
     setError(null)
-    setModelFetchError(null)
-  }, [initialProfile])
+  }, [form, initialProfile])
 
-  const modelsListRequiresApiKey =
-    providerModelsListConfig[providerKey].requiresApiKey
-  const canReuseStoredApiKey =
+  const providerKey = form.watch("providerKey")
+  const apiKey = form.watch("apiKey")
+  const selectedModel = form.watch("selectedModel")
+  const hasStoredApiKey =
     initialProfile !== null &&
     initialProfile.hasApiKey &&
-    providerKey === initialProfile.providerKey &&
-    apiKey.trim() === ""
-  const hasResolvedApiKey = apiKey.trim() !== "" || canReuseStoredApiKey
-  const canFetchModels = !modelsListRequiresApiKey || hasResolvedApiKey
-  const isFormValid =
-    name.trim() !== "" && selectedModel.trim() !== "" && hasResolvedApiKey
-  const providerLabel = providerOptions[providerKey] ?? providerKey
-
-  useEffect(() => {
-    if (!canFetchModels) {
-      setAvailableModels([])
-      setModelFetchError(null)
-      setIsLoadingModels(false)
-      return
-    }
-
-    let cancelled = false
-
-    const loadModels = async () => {
-      setIsLoadingModels(true)
-      setModelFetchError(null)
-
-      try {
-        const models =
-          modelsListRequiresApiKey && apiKey.trim() === "" && initialProfile
-            ? await fetchModelsForProfile(initialProfile)
-            : await fetchModelsForProvider(
-                providerKey,
-                modelsListRequiresApiKey ? apiKey.trim() : undefined,
-              )
-
-        if (cancelled) {
-          return
-        }
-
-        setAvailableModels(Array.from(new Set(models)).sort())
-      } catch (nextError) {
-        if (cancelled) {
-          return
-        }
-
-        setAvailableModels([])
-        setModelFetchError(
-          nextError instanceof Error
-            ? nextError.message
-            : "Failed to fetch models for this provider.",
-        )
-      } finally {
-        if (!cancelled) {
-          setIsLoadingModels(false)
-        }
-      }
-    }
-
-    loadModels().catch(console.error)
-
-    return () => {
-      cancelled = true
-    }
-  }, [
-    apiKey,
-    canFetchModels,
-    initialProfile,
-    modelsListRequiresApiKey,
+    providerKey === initialProfile.providerKey
+  const storedApiKeyProfileId =
+    hasStoredApiKey && apiKey.trim() === "" ? initialProfile.id : undefined
+  const modelList = useModelList({
     providerKey,
-  ])
+    apiKeyOverride: apiKey,
+    storedApiKeyProfileId,
+  })
+  const hasResolvedApiKey = apiKey.trim() !== "" || hasStoredApiKey
+  const isFormValid =
+    form.watch("name").trim() !== "" &&
+    selectedModel.trim() !== "" &&
+    hasResolvedApiKey
+  const providerLabel = providerConfig[providerKey].label
 
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
-    event.preventDefault()
-
+  const handleSubmit = form.handleSubmit(async (values) => {
     if (!isFormValid) {
       return
     }
@@ -154,10 +161,10 @@ export function ProviderProfileForm({
 
     try {
       await onSubmit({
-        name: name.trim(),
-        providerKey,
-        selectedModel: selectedModel.trim(),
-        apiKey: apiKey.trim() || undefined,
+        name: values.name.trim(),
+        providerKey: values.providerKey,
+        selectedModel: values.selectedModel.trim(),
+        apiKey: values.apiKey.trim() || undefined,
       })
     } catch (nextError) {
       setError(
@@ -166,123 +173,124 @@ export function ProviderProfileForm({
           : "Failed to save provider profile.",
       )
     }
-  }
+  })
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="settings-provider-profile-name">
-            Profile name
-          </FieldLabel>
-          <Input
-            id="settings-provider-profile-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Groq Primary"
-          />
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="settings-provider-profile-provider">
-            API provider
-          </FieldLabel>
-          <Select
-            value={providerKey}
-            onValueChange={(value) => {
-              const nextProviderKey = value as ProviderKey
-              setProviderKey(nextProviderKey)
-              setSelectedModel("")
-
-              if (
-                initialProfile &&
-                nextProviderKey !== initialProfile.providerKey
-              ) {
-                setApiKey("")
-              }
-            }}
-          >
-            <SelectTrigger
-              id="settings-provider-profile-provider"
-              className="w-full"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {Object.entries(providerOptions).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="settings-provider-profile-api-key">
-            {providerLabel} API key
-          </FieldLabel>
-          <Input
-            id="settings-provider-profile-api-key"
-            type="password"
-            value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            placeholder={
-              canReuseStoredApiKey ? "Saved API key" : "Paste your API key"
-            }
-          />
-          {canReuseStoredApiKey ? (
-            <FieldDescription>
-              Leave this blank to keep the saved API key for this profile.
-            </FieldDescription>
-          ) : (
-            <FieldDescription>
-              This key is stored in the OS credential manager, not in app
-              settings.
-            </FieldDescription>
-          )}
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="settings-provider-profile-model">
-            Model
-          </FieldLabel>
-          {!canFetchModels ? (
-            <FieldDescription>
-              Enter an API key to load models for this provider.
-            </FieldDescription>
-          ) : isLoadingModels ? (
-            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              <Spinner className="size-3.5" />
-              Loading available models...
-            </div>
-          ) : modelFetchError ? (
-            <>
+        <Controller
+          name="name"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel htmlFor="settings-provider-profile-name">
+                Profile name
+              </FieldLabel>
               <Input
-                id="settings-provider-profile-model"
-                value={selectedModel}
-                onChange={(event) => setSelectedModel(event.target.value)}
-                placeholder="Enter the model id"
+                {...field}
+                id="settings-provider-profile-name"
+                placeholder="Groq Primary"
               />
-              <FieldDescription>
-                Live model lookup failed, so you can enter a model id manually.
-              </FieldDescription>
-            </>
-          ) : (
-            <Combobox
-              items={availableModels}
-              value={selectedModel}
-              onValueChange={setSelectedModel}
-              placeholder="Search available models"
-            />
+            </Field>
           )}
-        </Field>
+        />
+
+        <Controller
+          name="providerKey"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel htmlFor="settings-provider-profile-provider">
+                API provider
+              </FieldLabel>
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value as ProviderKey)
+                  form.setValue("selectedModel", "")
+
+                  if (
+                    initialProfile &&
+                    value !== initialProfile.providerKey
+                  ) {
+                    form.setValue("apiKey", "")
+                  }
+                }}
+              >
+                <SelectTrigger
+                  id="settings-provider-profile-provider"
+                  className="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {Object.entries(providerConfig).map(([value, config]) => (
+                      <SelectItem key={value} value={value}>
+                        {config.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+
+        <ProviderApiKeyField
+          control={form.control}
+          fieldId="settings-provider-profile-api-key"
+          hasStoredApiKey={hasStoredApiKey}
+          label={`${providerLabel} API key`}
+        />
+
+        <Controller
+          name="selectedModel"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel htmlFor="settings-provider-profile-model">
+                Model
+              </FieldLabel>
+              {!modelList.canFetchModels ? (
+                <FieldDescription>
+                  Enter an API key to load models for this provider.
+                </FieldDescription>
+              ) : modelList.isLoading ? (
+                <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <Spinner className="size-3.5" />
+                  Loading available models...
+                </div>
+              ) : modelList.error ? (
+                <>
+                  <Input
+                    id="settings-provider-profile-model"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    placeholder="Enter the model id"
+                  />
+                  <FieldDescription>
+                    Live model lookup failed, so you can enter a model id
+                    manually.
+                  </FieldDescription>
+                </>
+              ) : (
+                <Combobox
+                  items={modelList.models}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Search available models"
+                />
+              )}
+            </Field>
+          )}
+        />
       </FieldGroup>
 
-      {(error || modelFetchError) && (
-        <FieldError>{error ?? modelFetchError}</FieldError>
+      {(error || modelList.error) && (
+        <FieldError>{error ?? modelList.error}</FieldError>
       )}
 
       <div className="flex justify-end">

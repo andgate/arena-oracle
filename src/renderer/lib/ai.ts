@@ -13,28 +13,36 @@ type ModelsResponse = {
   }>
 }
 
-type ProviderModelsListConfig = {
-  modelsUrl: string
-  requiresApiKey: boolean
+type ProviderConfig = {
+  label: string
+  modelList: {
+    url: string
+    requiresApiKey: boolean
+  }
 }
 
 // ----------------------------------------------------------------------------
 // Provider configuration
 // ----------------------------------------------------------------------------
 
-export const providerModelsListConfig: Record<
-  ProviderKey,
-  ProviderModelsListConfig
-> = {
+export const providerConfig: Record<ProviderKey, ProviderConfig> = {
   groq: {
-    modelsUrl: "https://api.groq.com/openai/v1/models",
-    requiresApiKey: true,
+    label: "Groq",
+    modelList: {
+      url: "https://api.groq.com/openai/v1/models",
+      requiresApiKey: true,
+    },
   },
   openrouter: {
-    modelsUrl: "https://openrouter.ai/api/v1/models",
-    requiresApiKey: false,
+    label: "OpenRouter",
+    modelList: {
+      url: "https://openrouter.ai/api/v1/models",
+      requiresApiKey: false,
+    },
   },
 }
+
+export const defaultProviderKey = Object.keys(providerConfig)[0] as ProviderKey
 
 // ----------------------------------------------------------------------------
 // Language model creation
@@ -89,7 +97,7 @@ export async function fetchModelsForProvider(
 async function fetchProviderModelsResponse(
   profile: ProviderProfile,
 ): Promise<Response> {
-  const config = providerModelsListConfig[profile.providerKey]
+  const config = providerConfig[profile.providerKey].modelList
 
   if (!config.requiresApiKey) {
     return fetchProviderModelsEndpoint(profile.providerKey)
@@ -110,13 +118,13 @@ async function fetchProviderModelsEndpoint(
   providerKey: ProviderKey,
   apiKey?: string,
 ): Promise<Response> {
-  const config = providerModelsListConfig[providerKey]
+  const config = providerConfig[providerKey].modelList
 
   if (config.requiresApiKey && !apiKey?.trim()) {
     throw new Error(`Provider "${providerKey}" requires an API key.`)
   }
 
-  const response = await fetch(config.modelsUrl, {
+  const response = await fetch(config.url, {
     headers: getProviderModelsAuthHeaders(providerKey, apiKey),
   })
 
@@ -131,7 +139,7 @@ function getProviderModelsAuthHeaders(
   providerKey: ProviderKey,
   apiKey?: string,
 ): Record<string, string> {
-  if (!providerModelsListConfig[providerKey].requiresApiKey) {
+  if (!providerConfig[providerKey].modelList.requiresApiKey) {
     return {}
   }
 
