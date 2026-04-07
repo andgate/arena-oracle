@@ -1,4 +1,4 @@
-import { ProviderProfileForm } from "@renderer/components/settings/ProviderProfileForm"
+import { SettingsProviderProfileForm } from "@renderer/components/settings/SettingsProviderProfileForm"
 import { Button } from "@renderer/components/ui/button"
 import {
   Card,
@@ -155,7 +155,7 @@ export function ProfileSettingsView() {
           </CardDescription>
         ) : null}
 
-        <ProviderProfileForm
+        <SettingsProviderProfileForm
           key={isCreateMode ? "create" : selectedProfile?.id ?? "empty"}
           initialProfile={isCreateMode ? null : selectedProfile}
           submitLabel={isCreateMode ? "Save profile" : "Update profile"}

@@ -8,7 +8,7 @@ type UseModelListParams = {
   storedApiKeyProfileId?: string
 }
 
-type UseModelListResult = {
+export type UseModelListResult = {
   models: string[]
   isLoading: boolean
   error: string | null
