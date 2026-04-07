@@ -10,6 +10,10 @@ import {
   type QueryClient,
 } from "@tanstack/react-query"
 
+// ----------------------------------------------------------------------------
+// Interfaces
+// ----------------------------------------------------------------------------
+
 export interface ProviderProfilesState {
   profiles: Record<string, ProviderProfile>
   selectedProfileId: string | null
@@ -25,11 +29,19 @@ interface AddProviderProfileMutationContext extends ProviderMutationContext {
 
 const providersQueryKey = ["providers"] as const
 
+// ----------------------------------------------------------------------------
+// Query setup
+// ----------------------------------------------------------------------------
+
 // This cache strategy assumes provider state is only mutated through these
 // renderer hooks and the Electron handlers they call.
 function createTemporaryProfileId(): string {
   return `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
+
+// ----------------------------------------------------------------------------
+// Electron API calls
+// ----------------------------------------------------------------------------
 
 async function getProvidersState(): Promise<ProviderProfilesState> {
   const [profiles, selectedProfileId] = await Promise.all([
@@ -45,7 +57,8 @@ async function getProvidersState(): Promise<ProviderProfilesState> {
 
 async function addProviderProfile(profile: CreateProviderProfileInput) {
   const nextProfile = await window.mtgaAPI.providers.addProfile(profile)
-  const selectedProfileId = await window.mtgaAPI.providers.getSelectedProfileId()
+  const selectedProfileId =
+    await window.mtgaAPI.providers.getSelectedProfileId()
 
   return {
     nextProfile,
@@ -88,13 +101,19 @@ async function setProviderApiKey(id: string, apiKey: string) {
   }
 }
 
+// ----------------------------------------------------------------------------
+// Cache helpers
+// ----------------------------------------------------------------------------
+
 function getProvidersStateSnapshot(queryClient: QueryClient) {
   return queryClient.getQueryData<ProviderProfilesState>(providersQueryKey)
 }
 
 function setProvidersState(
   queryClient: QueryClient,
-  updater: (current: ProviderProfilesState | undefined) => ProviderProfilesState,
+  updater: (
+    current: ProviderProfilesState | undefined,
+  ) => ProviderProfilesState,
 ) {
   queryClient.setQueryData<ProviderProfilesState>(providersQueryKey, updater)
 }
@@ -108,12 +127,20 @@ function restoreProvidersState(
   }
 }
 
+// ----------------------------------------------------------------------------
+// Query hooks
+// ----------------------------------------------------------------------------
+
 export function useProvidersStateQuery() {
   return useQuery({
     queryKey: providersQueryKey,
     queryFn: getProvidersState,
   })
 }
+
+// ----------------------------------------------------------------------------
+// Mutation hooks
+// ----------------------------------------------------------------------------
 
 export function useAddProviderProfileMutation() {
   const queryClient = useQueryClient()
@@ -143,7 +170,7 @@ export function useAddProviderProfileMutation() {
           },
           selectedProfileId: isFirstProfile
             ? temporaryProfileId
-            : current?.selectedProfileId ?? null,
+            : (current?.selectedProfileId ?? null),
         }
       })
 
@@ -181,10 +208,7 @@ export function useUpdateProviderProfileMutation() {
       id: string
       updates: UpdateProviderProfileInput
     }) => updateProviderProfile(id, updates),
-    onMutate: async ({
-      id,
-      updates,
-    }): Promise<ProviderMutationContext> => {
+    onMutate: async ({ id, updates }): Promise<ProviderMutationContext> => {
       await queryClient.cancelQueries({ queryKey: providersQueryKey })
 
       const previousState = getProvidersStateSnapshot(queryClient)
