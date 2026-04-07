@@ -8,21 +8,26 @@ import {
   FieldLabel,
 } from "@renderer/components/ui/field"
 import { Input } from "@renderer/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@renderer/components/ui/select"
 import { Spinner } from "@renderer/components/ui/spinner"
 import {
   fetchModelsForProvider,
   providerModelsListConfig,
 } from "@renderer/lib/ai"
-import {
-  CreateProviderProfileInput,
-  ProviderKey,
-} from "@shared/electron-types"
-import { FormEvent, useEffect, useMemo, useState } from "react"
+import { CreateProviderProfileInput, ProviderKey } from "@shared/electron-types"
+import { SubmitEventHandler, useEffect, useState } from "react"
 
-const providerOptions: Array<{ label: string; value: ProviderKey }> = [
-  { label: "Groq", value: "groq" },
-  { label: "OpenRouter", value: "openrouter" },
-]
+const providerOptions: Record<ProviderKey, string> = {
+  groq: "Groq",
+  openrouter: "OpenRouter",
+}
 
 type ProviderProfileFormProps = {
   isSubmitting?: boolean
@@ -47,6 +52,7 @@ export function ProviderProfileForm({
   const canFetchModels = !modelsListRequiresApiKey || apiKey.trim() !== ""
   const isFormValid =
     name.trim() !== "" && apiKey.trim() !== "" && selectedModel.trim() !== ""
+  const providerLabel = providerOptions[providerKey] ?? providerKey
 
   useEffect(() => {
     if (!canFetchModels) {
@@ -98,14 +104,7 @@ export function ProviderProfileForm({
     }
   }, [apiKey, canFetchModels, modelsListRequiresApiKey, providerKey])
 
-  const providerLabel = useMemo(
-    () =>
-      providerOptions.find((option) => option.value === providerKey)?.label ??
-      providerKey,
-    [providerKey],
-  )
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
 
     if (!isFormValid) {
@@ -149,21 +148,29 @@ export function ProviderProfileForm({
           <FieldLabel htmlFor="onboarding-provider-profile-provider">
             API provider
           </FieldLabel>
-          <select
-            id="onboarding-provider-profile-provider"
+          <Select
             value={providerKey}
-            onChange={(event) => {
-              setProviderKey(event.target.value as ProviderKey)
+            onValueChange={(value) => {
+              setProviderKey(value as ProviderKey)
               setSelectedModel("")
             }}
-            className="h-7 rounded-md border border-input bg-input/20 px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
           >
-            {providerOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id="onboarding-provider-profile-provider"
+              className="w-full"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {Object.entries(providerOptions).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </Field>
 
         <Field>
