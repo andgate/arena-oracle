@@ -3,30 +3,50 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { ProviderKey, ProviderProfile } from "@shared/electron-types"
 import type { LanguageModel } from "ai"
 
+// ----------------------------------------------------------------------------
+// Types
+// ----------------------------------------------------------------------------
+
 type ModelsResponse = {
   data?: Array<{
     id?: unknown
   }>
 }
 
-type ProviderModelsListConfig = {
-  modelsUrl: string
-  requiresApiKey: boolean
+type ProviderConfig = {
+  label: string
+  modelList: {
+    url: string
+    requiresApiKey: boolean
+  }
 }
 
-export const providerModelsListConfig: Record<
-  ProviderKey,
-  ProviderModelsListConfig
-> = {
+// ----------------------------------------------------------------------------
+// Provider configuration
+// ----------------------------------------------------------------------------
+
+export const providerConfig: Record<ProviderKey, ProviderConfig> = {
   groq: {
-    modelsUrl: "https://api.groq.com/openai/v1/models",
-    requiresApiKey: true,
+    label: "Groq",
+    modelList: {
+      url: "https://api.groq.com/openai/v1/models",
+      requiresApiKey: true,
+    },
   },
   openrouter: {
-    modelsUrl: "https://openrouter.ai/api/v1/models",
-    requiresApiKey: false,
+    label: "OpenRouter",
+    modelList: {
+      url: "https://openrouter.ai/api/v1/models",
+      requiresApiKey: false,
+    },
   },
 }
+
+export const defaultProviderKey = Object.keys(providerConfig)[0] as ProviderKey
+
+// ----------------------------------------------------------------------------
+// Language model creation
+// ----------------------------------------------------------------------------
 
 export async function getLanguageModelForProfile(
   profile: ProviderProfile,
@@ -41,6 +61,23 @@ export async function getLanguageModelForProfile(
 
   return createLanguageModel(profile.providerKey, profile.selectedModel, apiKey)
 }
+
+function createLanguageModel(
+  providerKey: ProviderKey,
+  modelId: string,
+  apiKey: string,
+): LanguageModel {
+  switch (providerKey) {
+    case "groq":
+      return createGroq({ apiKey })(modelId)
+    case "openrouter":
+      return createOpenRouter({ apiKey }).chat(modelId)
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Model fetching
+// ----------------------------------------------------------------------------
 
 export async function fetchModelsForProfile(
   profile: ProviderProfile,
@@ -57,23 +94,10 @@ export async function fetchModelsForProvider(
   return parseProviderModelsResponse(response, providerKey)
 }
 
-function createLanguageModel(
-  providerKey: ProviderKey,
-  modelId: string,
-  apiKey: string,
-): LanguageModel {
-  switch (providerKey) {
-    case "groq":
-      return createGroq({ apiKey })(modelId)
-    case "openrouter":
-      return createOpenRouter({ apiKey }).chat(modelId)
-  }
-}
-
 async function fetchProviderModelsResponse(
   profile: ProviderProfile,
 ): Promise<Response> {
-  const config = providerModelsListConfig[profile.providerKey]
+  const config = providerConfig[profile.providerKey].modelList
 
   if (!config.requiresApiKey) {
     return fetchProviderModelsEndpoint(profile.providerKey)
@@ -94,13 +118,13 @@ async function fetchProviderModelsEndpoint(
   providerKey: ProviderKey,
   apiKey?: string,
 ): Promise<Response> {
-  const config = providerModelsListConfig[providerKey]
+  const config = providerConfig[providerKey].modelList
 
   if (config.requiresApiKey && !apiKey?.trim()) {
     throw new Error(`Provider "${providerKey}" requires an API key.`)
   }
 
-  const response = await fetch(config.modelsUrl, {
+  const response = await fetch(config.url, {
     headers: getProviderModelsAuthHeaders(providerKey, apiKey),
   })
 
@@ -115,12 +139,16 @@ function getProviderModelsAuthHeaders(
   providerKey: ProviderKey,
   apiKey?: string,
 ): Record<string, string> {
-  if (!providerModelsListConfig[providerKey].requiresApiKey) {
+  if (!providerConfig[providerKey].modelList.requiresApiKey) {
     return {}
   }
 
   return { Authorization: `Bearer ${apiKey}` }
 }
+
+// ----------------------------------------------------------------------------
+// Model parsing
+// ----------------------------------------------------------------------------
 
 async function parseProviderModelsResponse(
   response: Response,

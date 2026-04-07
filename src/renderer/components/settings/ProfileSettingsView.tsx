@@ -1,4 +1,4 @@
-import { ProviderProfileForm } from "@renderer/components/settings/ProviderProfileForm"
+import { SettingsProviderProfileForm } from "@renderer/components/settings/SettingsProviderProfileForm"
 import { Button } from "@renderer/components/ui/button"
 import {
   Card,
@@ -7,6 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@renderer/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@renderer/components/ui/select"
 import { useProviders } from "@renderer/hooks/use-providers"
 import {
   CreateProviderProfileInput,
@@ -94,21 +102,27 @@ export function ProfileSettingsView() {
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <select
+          <Select
             value={isCreateMode ? "" : selectedProfileId ?? ""}
-            onChange={(event) => {
+            onValueChange={(value) => {
               setIsCreating(false)
-              selectProfile(event.target.value).catch(console.error)
+              selectProfile(value).catch(console.error)
             }}
             disabled={isLoading || sortedProfiles.length === 0}
-            className="h-7 min-w-0 flex-1 rounded-md border border-input bg-input/20 px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50 dark:bg-input/30"
           >
-            {sortedProfiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="min-w-0 flex-1">
+              <SelectValue placeholder="Select a provider profile" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {sortedProfiles.map((profile) => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
           <div className="flex gap-2">
             <Button
@@ -141,7 +155,7 @@ export function ProfileSettingsView() {
           </CardDescription>
         ) : null}
 
-        <ProviderProfileForm
+        <SettingsProviderProfileForm
           key={isCreateMode ? "create" : selectedProfile?.id ?? "empty"}
           initialProfile={isCreateMode ? null : selectedProfile}
           submitLabel={isCreateMode ? "Save profile" : "Update profile"}

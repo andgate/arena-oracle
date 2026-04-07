@@ -1,4 +1,4 @@
-import { ProviderProfileForm } from "@renderer/components/onboarding/ProviderProfileForm"
+import { OnboardingProviderProfileForm } from "@renderer/components/onboarding/OnboardingProviderProfileForm"
 import {
   Card,
   CardContent,
@@ -35,7 +35,7 @@ export function ProviderOnboardingView() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ProviderProfileForm
+          <OnboardingProviderProfileForm
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
           />

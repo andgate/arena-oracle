@@ -34,6 +34,7 @@ export default defineConfig({
         "**/renderer/app/**",
         "**/renderer/components/**",
         "**/renderer/components/ui/**",
+        "**/renderer/features/**",
         "**/renderer/hooks/**",
         "**/renderer/lib/**",
         "**/renderer/queries/**",
