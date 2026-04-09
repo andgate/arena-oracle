@@ -1,12 +1,22 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@renderer/components/ui/alert-dialog"
 import { useProviders } from "@renderer/hooks/use-providers"
 import { KeyboardEvent, useEffect, useRef, useState } from "react"
 import { useChatContext } from "./ChatProvider"
 
 export function ChatViewer() {
   const { profiles, selectedProfileId, selectProfile } = useProviders()
-  const { messages, isLoading, sendMessage } = useChatContext()
+  const { dismissError, errorMessage, messages, isLoading, sendMessage } =
+    useChatContext()
   const sortedProfiles = Object.values(profiles).sort((a, b) =>
-    a.name.localeCompare(b.name),
+    (a.name ?? "untitled").localeCompare(b.name ?? "untitled"),
   )
   const [input, setInput] = useState("")
   const [revealedSnapshots, setRevealedSnapshots] = useState<Set<string>>(
@@ -159,7 +169,7 @@ export function ChatViewer() {
         >
           {sortedProfiles.map((profile) => (
             <option key={profile.id} value={profile.id}>
-              {profile.name}
+              {profile.name ?? "untitled"}
             </option>
           ))}
         </select>
@@ -198,6 +208,23 @@ export function ChatViewer() {
           Send
         </button>
       </div>
+
+      <AlertDialog
+        open={errorMessage !== null}
+        onOpenChange={(open) => {
+          if (!open) dismissError()
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chat unavailable</AlertDialogTitle>
+            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={dismissError}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

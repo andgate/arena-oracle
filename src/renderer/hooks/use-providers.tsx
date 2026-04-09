@@ -6,11 +6,7 @@ import {
   useSetProviderApiKeyMutation,
   useUpdateProviderProfileMutation,
 } from "@renderer/queries/providers-query"
-import {
-  CreateProviderProfileInput,
-  ProviderProfile,
-  UpdateProviderProfileInput,
-} from "@shared/electron-types"
+import { ProviderProfile, ProviderProfileInput } from "@shared/electron-types"
 import { createContext, ReactNode, useContext } from "react"
 
 interface UseProvidersResult {
@@ -19,10 +15,10 @@ interface UseProvidersResult {
   profiles: Record<string, ProviderProfile>
   selectedProfile: ProviderProfile | null
   selectedProfileId: string | null
-  addProfile: (profile: CreateProviderProfileInput) => Promise<ProviderProfile>
+  addProfile: (profile: ProviderProfileInput) => Promise<ProviderProfile>
   updateProfile: (
     id: string,
-    updates: UpdateProviderProfileInput,
+    updates: ProviderProfileInput,
   ) => Promise<ProviderProfile>
   removeProfile: (id: string) => Promise<void>
   selectProfile: (id: string) => Promise<void>
@@ -46,15 +42,12 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     await selectProfileMutation.mutateAsync(id)
   }
 
-  const addProfile = async (profile: CreateProviderProfileInput) => {
+  const addProfile = async (profile: ProviderProfileInput) => {
     const { nextProfile } = await addProfileMutation.mutateAsync(profile)
     return nextProfile
   }
 
-  const updateProfile = async (
-    id: string,
-    updates: UpdateProviderProfileInput,
-  ) => {
+  const updateProfile = async (id: string, updates: ProviderProfileInput) => {
     const { nextProfile } = await updateProfileMutation.mutateAsync({
       id,
       updates,

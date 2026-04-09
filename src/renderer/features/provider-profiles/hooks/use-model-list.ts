@@ -1,4 +1,5 @@
-import { fetchModelsForProvider, providerConfig } from "@renderer/lib/ai"
+import { fetchModelsForProvider } from "@renderer/lib/ai"
+import { providerConfig } from "@shared/provider-config"
 import { ProviderKey } from "@shared/electron-types"
 import { useEffect, useState } from "react"
 

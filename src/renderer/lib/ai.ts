@@ -1,6 +1,7 @@
 import { createGroq } from "@ai-sdk/groq"
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { ProviderKey, ProviderProfile } from "@shared/electron-types"
+import { providerConfig } from "@shared/provider-config"
 import type { LanguageModel } from "ai"
 
 // ----------------------------------------------------------------------------
@@ -13,36 +14,37 @@ type ModelsResponse = {
   }>
 }
 
-type ProviderConfig = {
-  label: string
-  modelList: {
-    url: string
-    requiresApiKey: boolean
+// ----------------------------------------------------------------------------
+// Validation helpers
+// ----------------------------------------------------------------------------
+
+function requireProviderKey(providerKey?: ProviderKey): ProviderKey {
+  if (!providerKey) {
+    throw new Error("Provider key is required.")
   }
+
+  return providerKey
 }
 
-// ----------------------------------------------------------------------------
-// Provider configuration
-// ----------------------------------------------------------------------------
+function requireProfileProviderKey(profile: ProviderProfile): ProviderKey {
+  if (!profile.providerKey) {
+    throw new Error(
+      `Provider profile "${profile.id}" does not have a provider key.`,
+    )
+  }
 
-export const providerConfig: Record<ProviderKey, ProviderConfig> = {
-  groq: {
-    label: "Groq",
-    modelList: {
-      url: "https://api.groq.com/openai/v1/models",
-      requiresApiKey: true,
-    },
-  },
-  openrouter: {
-    label: "OpenRouter",
-    modelList: {
-      url: "https://openrouter.ai/api/v1/models",
-      requiresApiKey: false,
-    },
-  },
+  return profile.providerKey
 }
 
-export const defaultProviderKey = Object.keys(providerConfig)[0] as ProviderKey
+function requireProfileSelectedModel(profile: ProviderProfile): string {
+  if (!profile.selectedModel?.trim()) {
+    throw new Error(
+      `Provider profile "${profile.id}" does not have a selected model.`,
+    )
+  }
+
+  return profile.selectedModel.trim()
+}
 
 // ----------------------------------------------------------------------------
 // Language model creation
@@ -51,6 +53,8 @@ export const defaultProviderKey = Object.keys(providerConfig)[0] as ProviderKey
 export async function getLanguageModelForProfile(
   profile: ProviderProfile,
 ): Promise<LanguageModel> {
+  const providerKey = requireProfileProviderKey(profile)
+  const modelId = requireProfileSelectedModel(profile)
   const apiKey = await window.mtgaAPI.providers.getApiKey(profile.id)
 
   if (!apiKey) {
@@ -59,7 +63,7 @@ export async function getLanguageModelForProfile(
     )
   }
 
-  return createLanguageModel(profile.providerKey, profile.selectedModel, apiKey)
+  return createLanguageModel(providerKey, modelId, apiKey)
 }
 
 function createLanguageModel(
@@ -82,25 +86,31 @@ function createLanguageModel(
 export async function fetchModelsForProfile(
   profile: ProviderProfile,
 ): Promise<string[]> {
+  const providerKey = requireProfileProviderKey(profile)
   const response = await fetchProviderModelsResponse(profile)
-  return parseProviderModelsResponse(response, profile.providerKey)
+  return parseProviderModelsResponse(response, providerKey)
 }
 
 export async function fetchModelsForProvider(
-  providerKey: ProviderKey,
+  providerKey?: ProviderKey,
   apiKey?: string,
 ): Promise<string[]> {
-  const response = await fetchProviderModelsEndpoint(providerKey, apiKey)
-  return parseProviderModelsResponse(response, providerKey)
+  const resolvedProviderKey = requireProviderKey(providerKey)
+  const response = await fetchProviderModelsEndpoint(
+    resolvedProviderKey,
+    apiKey,
+  )
+  return parseProviderModelsResponse(response, resolvedProviderKey)
 }
 
 async function fetchProviderModelsResponse(
   profile: ProviderProfile,
 ): Promise<Response> {
-  const config = providerConfig[profile.providerKey].modelList
+  const providerKey = requireProfileProviderKey(profile)
+  const config = providerConfig[providerKey].modelList
 
   if (!config.requiresApiKey) {
-    return fetchProviderModelsEndpoint(profile.providerKey)
+    return fetchProviderModelsEndpoint(providerKey)
   }
 
   const apiKey = await window.mtgaAPI.providers.getApiKey(profile.id)
@@ -111,8 +121,12 @@ async function fetchProviderModelsResponse(
     )
   }
 
-  return fetchProviderModelsEndpoint(profile.providerKey, apiKey)
+  return fetchProviderModelsEndpoint(providerKey, apiKey)
 }
+
+// ----------------------------------------------------------------------------
+// Fetch helpers
+// ----------------------------------------------------------------------------
 
 async function fetchProviderModelsEndpoint(
   providerKey: ProviderKey,

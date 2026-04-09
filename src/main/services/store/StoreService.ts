@@ -32,7 +32,7 @@ export class StoreService implements IStoreService {
         default: defaultStore.providerProfiles,
         additionalProperties: {
           type: "object",
-          required: ["id", "name", "providerKey", "selectedModel", "hasApiKey"],
+          required: ["id", "hasApiKey"],
           additionalProperties: false,
           properties: {
             id: { type: "string" },

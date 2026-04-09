@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@renderer/components/ui/select"
 import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
-import { providerConfig } from "@renderer/lib/ai"
+import { providerConfig } from "@shared/provider-config"
 import { ProviderKey } from "@shared/electron-types"
 import { Control, Controller } from "react-hook-form"
 
