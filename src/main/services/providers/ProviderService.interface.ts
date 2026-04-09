@@ -1,17 +1,13 @@
-import {
-  CreateProviderProfileInput,
-  ProviderProfile,
-  UpdateProviderProfileInput,
-} from "@shared/electron-types"
+import { ProviderProfile, ProviderProfileInput } from "@shared/electron-types"
 
 export const IProviderService = Symbol("IProviderService")
 
 export interface IProviderService {
   getProfiles(): Record<string, ProviderProfile>
-  addProfile(profile: CreateProviderProfileInput): Promise<ProviderProfile>
+  addProfile(profile: ProviderProfileInput): Promise<ProviderProfile>
   updateProfile(
     id: string,
-    updates: UpdateProviderProfileInput,
+    updates: ProviderProfileInput,
   ): Promise<ProviderProfile>
   removeProfile(id: string): Promise<void>
   getSelectedProfileId(): string | null

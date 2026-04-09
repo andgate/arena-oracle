@@ -1,5 +1,10 @@
 import { ResolvedCard } from "./card-types"
-
+import type { ProviderProfile, ProviderProfileInput } from "./provider-profile-types"
+export type {
+  ProviderKey,
+  ProviderProfile,
+  ProviderProfileInput,
+} from "./provider-profile-types"
 export interface CardDbAPI {
   isLoaded: () => Promise<boolean>
   lookupCard: (grpId: number) => Promise<ResolvedCard | null>
@@ -20,30 +25,6 @@ export interface SettingsAPI {
   setDeveloperMode: (value: boolean) => Promise<void>
 }
 
-export type ProviderKey = "groq" | "openrouter"
-
-export interface ProviderProfile {
-  id: string
-  name: string
-  providerKey: ProviderKey
-  selectedModel: string
-  hasApiKey: boolean
-}
-
-export interface CreateProviderProfileInput {
-  name: string
-  providerKey: ProviderKey
-  selectedModel: string
-  apiKey: string
-}
-
-export interface UpdateProviderProfileInput {
-  name: string
-  providerKey: ProviderKey
-  selectedModel: string
-  apiKey?: string
-}
-
 export interface ProviderStoreState {
   providerProfiles: Record<string, ProviderProfile>
   selectedProviderProfileId: string | null
@@ -51,11 +32,8 @@ export interface ProviderStoreState {
 
 export interface ProvidersAPI {
   getProfiles: () => Promise<Record<string, ProviderProfile>>
-  addProfile: (profile: CreateProviderProfileInput) => Promise<ProviderProfile>
-  updateProfile: (
-    id: string,
-    updates: UpdateProviderProfileInput,
-  ) => Promise<ProviderProfile>
+  addProfile: (profile: ProviderProfileInput) => Promise<ProviderProfile>
+  updateProfile: (id: string, updates: ProviderProfileInput) => Promise<ProviderProfile>
   removeProfile: (id: string) => Promise<void>
   getSelectedProfileId: () => Promise<string | null>
   setSelectedProfileId: (id: string) => Promise<void>

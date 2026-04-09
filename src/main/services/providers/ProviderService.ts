@@ -1,7 +1,6 @@
 import {
-  CreateProviderProfileInput,
   ProviderProfile,
-  UpdateProviderProfileInput,
+  ProviderProfileInput,
   type AppStoreSchema,
 } from "@shared/electron-types"
 import { inject, injectable, singleton } from "tsyringe"
@@ -10,6 +9,11 @@ import { IStoreService } from "../store/StoreService.interface"
 import { IProviderService } from "./ProviderService.interface"
 
 const KEYTAR_SERVICE_NAME = "arena-oracle.providers"
+
+const defined = <T extends object>(obj: T) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as Partial<T>
 
 @injectable()
 @singleton()
@@ -23,21 +27,15 @@ export class ProviderService implements IProviderService {
     return this.storeService.get("providerProfiles")
   }
 
-  async addProfile(
-    profile: CreateProviderProfileInput,
-  ): Promise<ProviderProfile> {
-    const apiKey = profile.apiKey.trim()
-
-    if (!apiKey) {
-      throw new Error("Provider profiles require an API key.")
-    }
-
+  async addProfile(profile: ProviderProfileInput): Promise<ProviderProfile> {
     const nextProfile: ProviderProfile = {
       id: crypto.randomUUID(),
-      name: profile.name,
-      providerKey: profile.providerKey,
-      selectedModel: profile.selectedModel,
-      hasApiKey: false,
+      hasApiKey: !!profile.apiKey?.trim(),
+      ...defined({
+        name: profile.name,
+        providerKey: profile.providerKey,
+        selectedModel: profile.selectedModel,
+      }),
     }
 
     this.storeProfilesById({
@@ -49,31 +47,30 @@ export class ProviderService implements IProviderService {
       this.storeSelectedProfileId(nextProfile.id)
     }
 
-    await this.setApiKey(nextProfile.id, apiKey)
+    if (profile.apiKey?.trim()) {
+      await this.setApiKey(nextProfile.id, profile.apiKey)
+    }
 
     return this.getProfileById(nextProfile.id)
   }
 
   async updateProfile(
     id: string,
-    updates: UpdateProviderProfileInput,
+    updates: ProviderProfileInput,
   ): Promise<ProviderProfile> {
     const currentProfile = this.getProfileById(id)
-    const providerChanged = currentProfile.providerKey !== updates.providerKey
     const nextApiKey = updates.apiKey?.trim()
-
-    if (providerChanged && !nextApiKey) {
-      throw new Error("Changing provider requires a new API key.")
-    }
 
     this.storeProfilesById({
       ...this.storeService.get("providerProfiles"),
       [id]: {
-        id,
-        name: updates.name,
-        providerKey: updates.providerKey,
-        selectedModel: updates.selectedModel,
-        hasApiKey: providerChanged ? false : currentProfile.hasApiKey,
+        ...currentProfile,
+        hasApiKey: !!nextApiKey,
+        ...defined({
+          name: updates.name,
+          providerKey: updates.providerKey,
+          selectedModel: updates.selectedModel,
+        }),
       },
     })
 
@@ -123,16 +120,7 @@ export class ProviderService implements IProviderService {
       throw new Error("Provider profiles require an API key.")
     }
 
-    const profile = this.getProfileById(id)
     await this.keytarService.setPassword(KEYTAR_SERVICE_NAME, id, trimmedApiKey)
-
-    this.storeProfilesById({
-      ...this.storeService.get("providerProfiles"),
-      [id]: {
-        ...profile,
-        hasApiKey: true,
-      },
-    })
   }
 
   private getProfileById(id: string): ProviderProfile {
@@ -154,10 +142,8 @@ export class ProviderService implements IProviderService {
       return selectedProfileId
     }
 
-    const fallbackProfileId =
-      Object.values(profiles).sort((a, b) =>
-        a.name.localeCompare(b.name),
-      )[0]?.id ?? null
+    const fallbackProfileId = Object.values(profiles)[0]?.id ?? null
+
     this.storeSelectedProfileId(fallbackProfileId)
 
     return fallbackProfileId

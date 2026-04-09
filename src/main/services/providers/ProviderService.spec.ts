@@ -1,7 +1,4 @@
-import {
-  CreateProviderProfileInput,
-  ProviderProfile,
-} from "@shared/electron-types"
+import { ProviderProfile, ProviderProfileInput } from "@shared/electron-types"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { IKeytarService } from "../keytar/KeytarService.interface"
 import { FakeStoreService } from "../store/StoreService.mock"
@@ -28,8 +25,8 @@ class FakeKeytarService implements IKeytarService {
 }
 
 function createProfile(
-  overrides: Partial<CreateProviderProfileInput> = {},
-): CreateProviderProfileInput {
+  overrides: Partial<ProviderProfileInput> = {},
+): ProviderProfileInput {
   return {
     name: "Groq Primary",
     providerKey: "groq",
@@ -104,6 +101,69 @@ describe("ProviderService", () => {
     })
   })
 
+  it("persists a profile without an API key", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
+
+    const service = new ProviderService(
+      new FakeStoreService(),
+      new FakeKeytarService(),
+    )
+
+    await expect(
+      service.addProfile(
+        createProfile({
+          apiKey: undefined,
+        }),
+      ),
+    ).resolves.toEqual({
+      id: profileId,
+      name: "Groq Primary",
+      providerKey: "groq",
+      selectedModel: "openai/gpt-oss-120b",
+      hasApiKey: false,
+    })
+  })
+
+  it("persists a profile without a selected model", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
+
+    const service = new ProviderService(
+      new FakeStoreService(),
+      new FakeKeytarService(),
+    )
+
+    await expect(
+      service.addProfile(
+        createProfile({
+          selectedModel: undefined,
+        }),
+      ),
+    ).resolves.toEqual({
+      id: profileId,
+      name: "Groq Primary",
+      providerKey: "groq",
+      selectedModel: undefined,
+      hasApiKey: true,
+    })
+  })
+
+  it("auto-selects the first incomplete profile", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
+
+    const store = new FakeStoreService()
+    const service = new ProviderService(store, new FakeKeytarService())
+
+    await service.addProfile(
+      createProfile({
+        apiKey: undefined,
+        selectedModel: undefined,
+      }),
+    )
+
+    expect(store.get("selectedProviderProfileId")).toBe(profileId)
+    expect(service.getSelectedProfileId()).toBe(profileId)
+  })
+
   it("throws when updating a missing profile", async () => {
     const service = new ProviderService(
       new FakeStoreService(),
@@ -119,7 +179,7 @@ describe("ProviderService", () => {
     ).rejects.toThrow(`Provider profile "${profileId}" was not found.`)
   })
 
-  it("throws when changing provider without a replacement API key", async () => {
+  it("allows changing provider without a replacement API key and clears hasApiKey", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
     const service = new ProviderService(
@@ -131,11 +191,38 @@ describe("ProviderService", () => {
 
     await expect(
       service.updateProfile(profileId, {
-        name: "OpenRouter Backup",
         providerKey: "openrouter",
-        selectedModel: "openrouter/auto",
       }),
-    ).rejects.toThrow("Changing provider requires a new API key.")
+    ).resolves.toEqual({
+      id: profileId,
+      name: "Groq Primary",
+      providerKey: "openrouter",
+      selectedModel: "openai/gpt-oss-120b",
+      hasApiKey: false,
+    })
+  })
+
+  it("updates the name and clears hasApiKey when apiKey is omitted", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
+
+    const service = new ProviderService(
+      new FakeStoreService(),
+      new FakeKeytarService(),
+    )
+
+    await service.addProfile(createProfile())
+
+    await expect(
+      service.updateProfile(profileId, {
+        name: "Renamed Profile",
+      }),
+    ).resolves.toEqual({
+      id: profileId,
+      name: "Renamed Profile",
+      providerKey: "groq",
+      selectedModel: "openai/gpt-oss-120b",
+      hasApiKey: false,
+    })
   })
 
   it("removes a profile and deletes its stored API key", async () => {
@@ -249,7 +336,7 @@ describe("ProviderService", () => {
     expect(store.get("selectedProviderProfileId")).toBe(firstProfile.id)
   })
 
-  it("stores hasApiKey as false before the password is saved", async () => {
+  it("stores hasApiKey as true before the password is saved when an apiKey is provided", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
     const store = new FakeStoreService()
@@ -264,7 +351,7 @@ describe("ProviderService", () => {
           name: "Groq Primary",
           providerKey: "groq",
           selectedModel: "openai/gpt-oss-120b",
-          hasApiKey: false,
+          hasApiKey: true,
         },
       })
 

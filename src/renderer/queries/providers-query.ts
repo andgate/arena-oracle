@@ -1,8 +1,4 @@
-import {
-  CreateProviderProfileInput,
-  ProviderProfile,
-  UpdateProviderProfileInput,
-} from "@shared/electron-types"
+import { ProviderProfile, ProviderProfileInput } from "@shared/electron-types"
 import {
   useMutation,
   useQuery,
@@ -55,7 +51,7 @@ async function getProvidersState(): Promise<ProviderProfilesState> {
   }
 }
 
-async function addProviderProfile(profile: CreateProviderProfileInput) {
+async function addProviderProfile(profile: ProviderProfileInput) {
   const nextProfile = await window.mtgaAPI.providers.addProfile(profile)
   const selectedProfileId =
     await window.mtgaAPI.providers.getSelectedProfileId()
@@ -68,7 +64,7 @@ async function addProviderProfile(profile: CreateProviderProfileInput) {
 
 async function updateProviderProfile(
   id: string,
-  updates: UpdateProviderProfileInput,
+  updates: ProviderProfileInput,
 ) {
   const nextProfile = await window.mtgaAPI.providers.updateProfile(id, updates)
 
@@ -162,10 +158,8 @@ export function useAddProviderProfileMutation() {
             ...profiles,
             [temporaryProfileId]: {
               id: temporaryProfileId,
-              name: profile.name,
-              providerKey: profile.providerKey,
-              selectedModel: profile.selectedModel,
-              hasApiKey: profile.apiKey.trim().length > 0,
+              ...profile,
+              hasApiKey: !!profile.apiKey?.trim(),
             },
           },
           selectedProfileId: isFirstProfile
@@ -206,7 +200,7 @@ export function useUpdateProviderProfileMutation() {
       updates,
     }: {
       id: string
-      updates: UpdateProviderProfileInput
+      updates: ProviderProfileInput
     }) => updateProviderProfile(id, updates),
     onMutate: async ({ id, updates }): Promise<ProviderMutationContext> => {
       await queryClient.cancelQueries({ queryKey: providersQueryKey })
@@ -225,13 +219,8 @@ export function useUpdateProviderProfileMutation() {
             ...current.profiles,
             [id]: {
               ...existingProfile,
-              name: updates.name,
-              providerKey: updates.providerKey,
-              selectedModel: updates.selectedModel,
-              hasApiKey:
-                updates.apiKey !== undefined
-                  ? updates.apiKey.trim().length > 0
-                  : existingProfile.hasApiKey,
+              ...updates,
+              hasApiKey: !!updates.apiKey?.trim(),
             },
           },
           selectedProfileId: current.selectedProfileId,

@@ -16,79 +16,66 @@ import {
   SelectValue,
 } from "@renderer/components/ui/select"
 import { useProviders } from "@renderer/hooks/use-providers"
-import {
-  CreateProviderProfileInput,
-  UpdateProviderProfileInput,
-} from "@shared/electron-types"
+import { defaultProviderKey } from "@shared/provider-config"
 import { PlusIcon, Trash2Icon } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 export function ProfileSettingsView() {
   const {
     error,
     isLoading,
     profiles,
-    selectedProfile,
-    selectedProfileId,
     addProfile,
     removeProfile,
-    selectProfile,
     updateProfile,
   } = useProviders()
+
   const sortedProfiles = Object.values(profiles).sort((a, b) =>
-    a.name.localeCompare(b.name),
+    (a.name ?? "untitled").localeCompare(b.name ?? "untitled"),
   )
-  const [isCreating, setIsCreating] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const isCreateMode = isCreating || sortedProfiles.length === 0
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(
+    sortedProfiles[0]?.id ?? null,
+  )
+  const editingProfile =
+    (editingProfileId && profiles[editingProfileId]) ?? null
+  const canDelete = editingProfileId !== null
 
-  const canDelete = sortedProfiles.length > 1 && selectedProfileId !== null
-
-  const handleCreate = async (values: UpdateProviderProfileInput) => {
-    const apiKey = values.apiKey?.trim()
-
-    if (!apiKey) {
-      throw new Error("Provider profiles require an API key.")
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      await addProfile({
-        name: values.name,
-        providerKey: values.providerKey,
-        selectedModel: values.selectedModel,
-        apiKey,
-      } satisfies CreateProviderProfileInput)
-      setIsCreating(false)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleUpdate = async (values: UpdateProviderProfileInput) => {
-    if (!selectedProfileId) {
+  const handleProfileChange = (
+    updates: Parameters<typeof updateProfile>[1],
+  ) => {
+    if (!editingProfile) {
       throw new Error("Select a profile before editing it.")
     }
 
-    setIsSubmitting(true)
-
-    try {
-      await updateProfile(selectedProfileId, values)
-    } finally {
-      setIsSubmitting(false)
-    }
+    return updateProfile(editingProfile.id, updates)
   }
 
-  const handleDelete = async () => {
-    if (!selectedProfileId) {
+  useEffect(() => {
+    if (editingProfileId) {
       return
     }
 
-    await removeProfile(selectedProfileId)
-    if (sortedProfiles.length === 1) {
-      setIsCreating(true)
+    setEditingProfileId(sortedProfiles[0]?.id ?? null)
+  }, [editingProfileId, profiles, sortedProfiles])
+
+  const handleNew = async () => {
+    const newProfile = await addProfile({
+      name: "",
+      providerKey: defaultProviderKey,
+    })
+    setEditingProfileId(newProfile.id)
+  }
+
+  const handleDelete = async () => {
+    if (!editingProfileId) {
+      return
     }
+
+    const fallbackId =
+      sortedProfiles.find((profile) => profile.id !== editingProfileId)?.id ??
+      null
+    await removeProfile(editingProfileId)
+    setEditingProfileId(fallbackId)
   }
 
   return (
@@ -103,11 +90,8 @@ export function ProfileSettingsView() {
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <Select
-            value={isCreateMode ? "" : selectedProfileId ?? ""}
-            onValueChange={(value) => {
-              setIsCreating(false)
-              selectProfile(value).catch(console.error)
-            }}
+            value={editingProfileId ?? ""}
+            onValueChange={(value) => setEditingProfileId(value)}
             disabled={isLoading || sortedProfiles.length === 0}
           >
             <SelectTrigger className="min-w-0 flex-1">
@@ -117,7 +101,7 @@ export function ProfileSettingsView() {
               <SelectGroup>
                 {sortedProfiles.map((profile) => (
                   <SelectItem key={profile.id} value={profile.id}>
-                    {profile.name}
+                    {profile.name ?? "untitled"}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -128,7 +112,9 @@ export function ProfileSettingsView() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsCreating(true)}
+              onClick={() => {
+                handleNew().catch(console.error)
+              }}
             >
               <PlusIcon />
               New profile
@@ -149,19 +135,13 @@ export function ProfileSettingsView() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {sortedProfiles.length === 0 && !isCreateMode ? (
-          <CardDescription>
-            No provider profiles have been saved yet. Create one below.
-          </CardDescription>
-        ) : null}
-
-        <SettingsProviderProfileForm
-          key={isCreateMode ? "create" : selectedProfile?.id ?? "empty"}
-          initialProfile={isCreateMode ? null : selectedProfile}
-          submitLabel={isCreateMode ? "Save profile" : "Update profile"}
-          isSubmitting={isSubmitting}
-          onSubmit={isCreateMode ? handleCreate : handleUpdate}
-        />
+        {editingProfile && (
+          <SettingsProviderProfileForm
+            key={editingProfile.id}
+            profile={editingProfile}
+            onChange={handleProfileChange}
+          />
+        )}
 
         {error && <p className="text-xs text-destructive">{error.message}</p>}
       </CardContent>

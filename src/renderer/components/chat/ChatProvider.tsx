@@ -30,6 +30,8 @@ export interface ChatMessage {
 interface ChatContextValue {
   messages: ChatMessage[]
   isLoading: boolean
+  errorMessage: string | null
+  dismissError: () => void
   sendMessage: (content: string) => Promise<void>
 }
 
@@ -211,6 +213,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   ])
   const [incomingMessage, setIncomingMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const visibleMessages: ChatMessage[] = useMemo(() => {
     if (incomingMessage === null) return messages
@@ -262,19 +265,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       ])
     } catch (err) {
       console.error("Chat API error:", err)
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: generateId(),
-          role: "assistant",
-          content: "Sorry, I failed to get a response from the coach.",
-        },
-      ])
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Failed to get a response from the coach.",
+      )
     } finally {
       setIncomingMessage(null)
       setIsLoading(false)
     }
   }
+
+  const dismissError = () => setErrorMessage(null)
 
   // ---- Snapshot listener ----
   useEffect(() => {
@@ -315,6 +317,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       value={{
         messages: visibleMessages,
         isLoading,
+        errorMessage,
+        dismissError,
         sendMessage,
       }}
     >

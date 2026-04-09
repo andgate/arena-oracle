@@ -9,14 +9,14 @@ import { ProviderProfileModelField } from "@renderer/features/provider-profiles/
 import { ProviderProfileSelectField } from "@renderer/features/provider-profiles/components/ProviderProfileSelectField"
 import { useModelList } from "@renderer/features/provider-profiles/hooks/use-model-list"
 import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
-import { defaultProviderKey, providerConfig } from "@renderer/lib/ai"
-import { CreateProviderProfileInput } from "@shared/electron-types"
+import { ProviderProfileInput } from "@shared/electron-types"
+import { defaultProviderKey, providerConfig } from "@shared/provider-config"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 
 type OnboardingProviderProfileFormProps = {
   isSubmitting?: boolean
-  onSubmit: (values: CreateProviderProfileInput) => Promise<void>
+  onSubmit: (values: ProviderProfileInput) => Promise<void>
 }
 
 export function OnboardingProviderProfileForm({

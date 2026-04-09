@@ -7,14 +7,14 @@ import {
   CardTitle,
 } from "@renderer/components/ui/card"
 import { useProviders } from "@renderer/hooks/use-providers"
-import { CreateProviderProfileInput } from "@shared/electron-types"
+import { ProviderProfileInput } from "@shared/electron-types"
 import { useState } from "react"
 
 export function ProviderOnboardingView() {
   const { addProfile } = useProviders()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = async (values: CreateProviderProfileInput) => {
+  const handleSubmit = async (values: ProviderProfileInput) => {
     setIsSubmitting(true)
 
     try {

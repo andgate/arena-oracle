@@ -1,103 +1,86 @@
 import { SettingsProviderProfileNameField } from "@renderer/components/settings/SettingsProviderProfileNameField"
-import { Button } from "@renderer/components/ui/button"
-import {
-  FieldError,
-  FieldGroup,
-} from "@renderer/components/ui/field"
+import { FieldError, FieldGroup } from "@renderer/components/ui/field"
 import { ProviderProfileApiKeyField } from "@renderer/features/provider-profiles/components/ProviderProfileApiKeyField"
 import { ProviderProfileModelField } from "@renderer/features/provider-profiles/components/ProviderProfileModelField"
 import { ProviderProfileSelectField } from "@renderer/features/provider-profiles/components/ProviderProfileSelectField"
 import { useModelList } from "@renderer/features/provider-profiles/hooks/use-model-list"
 import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
-import { defaultProviderKey, providerConfig } from "@renderer/lib/ai"
 import {
   ProviderKey,
   ProviderProfile,
-  UpdateProviderProfileInput,
+  ProviderProfileInput,
 } from "@shared/electron-types"
-import { useEffect, useState } from "react"
+import { defaultProviderKey, providerConfig } from "@shared/provider-config"
+import { useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
 
 type SettingsProviderProfileFormProps = {
-  initialProfile?: ProviderProfile | null
-  isSubmitting?: boolean
-  submitLabel: string
-  onSubmit: (values: UpdateProviderProfileInput) => Promise<void>
+  profile: ProviderProfile
+  onChange: (updates: ProviderProfileInput) => Promise<ProviderProfile>
 }
 
 function getProviderProfileFormValues(
-  profile: ProviderProfile | null,
+  profile: ProviderProfile,
 ): ProviderProfileFormValues {
   return {
-    name: profile?.name ?? "",
-    providerKey: profile?.providerKey ?? defaultProviderKey,
+    name: profile.name ?? "",
+    providerKey: profile.providerKey ?? defaultProviderKey,
     apiKey: "",
-    selectedModel: profile?.selectedModel ?? "",
+    selectedModel: profile.selectedModel ?? "",
   }
 }
 
 export function SettingsProviderProfileForm({
-  initialProfile = null,
-  isSubmitting = false,
-  submitLabel,
-  onSubmit,
+  profile,
+  onChange,
 }: SettingsProviderProfileFormProps) {
-  const [error, setError] = useState<string | null>(null)
   const form = useForm<ProviderProfileFormValues>({
-    defaultValues: getProviderProfileFormValues(initialProfile),
+    defaultValues: getProviderProfileFormValues(profile),
   })
-
-  useEffect(() => {
-    form.reset(getProviderProfileFormValues(initialProfile))
-    setError(null)
-  }, [form, initialProfile])
-
+  const name = form.watch("name")
   const providerKey = form.watch("providerKey")
   const apiKey = form.watch("apiKey")
   const selectedModel = form.watch("selectedModel")
+
+  const isFirstRender = useRef(true)
+
   const hasStoredApiKey =
-    initialProfile !== null &&
-    initialProfile.hasApiKey &&
-    providerKey === initialProfile.providerKey
+    profile.hasApiKey === true &&
+    providerKey === (profile.providerKey ?? defaultProviderKey)
   const storedApiKeyProfileId =
-    hasStoredApiKey && apiKey.trim() === "" ? initialProfile.id : undefined
+    hasStoredApiKey && apiKey.trim() === "" ? profile.id : undefined
   const modelList = useModelList({
     providerKey,
     apiKeyOverride: apiKey,
     storedApiKeyProfileId,
   })
-  const hasResolvedApiKey = apiKey.trim() !== "" || hasStoredApiKey
-  const isFormValid =
-    form.watch("name").trim() !== "" &&
-    selectedModel.trim() !== "" &&
-    hasResolvedApiKey
   const providerLabel = providerConfig[providerKey].label
 
-  const handleSubmit = form.handleSubmit(async (values) => {
-    if (!isFormValid) {
+  // Auto-save effect
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
       return
     }
 
-    setError(null)
+    const timeout = setTimeout(() => {
+      const trimmedKey = apiKey.trim()
 
-    try {
-      await onSubmit({
-        name: values.name.trim(),
-        providerKey: values.providerKey,
-        selectedModel: values.selectedModel.trim(),
-        apiKey: values.apiKey.trim() || undefined,
+      onChange({
+        name: name.trim(),
+        providerKey,
+        selectedModel: selectedModel.trim(),
+        ...(trimmedKey ? { apiKey: trimmedKey } : {}),
+      }).catch((err) => {
+        console.error("Failed to auto-save provider profile", err)
       })
-    } catch (nextError) {
-      setError(
-        nextError instanceof Error
-          ? nextError.message
-          : "Failed to save provider profile.",
-      )
-    }
-  })
+    }, 400)
+
+    return () => clearTimeout(timeout)
+  }, [apiKey, name, onChange, providerKey, selectedModel])
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       <FieldGroup>
         <SettingsProviderProfileNameField control={form.control} />
 
@@ -108,8 +91,7 @@ export function SettingsProviderProfileForm({
             form.setValue("selectedModel", "")
 
             if (
-              initialProfile &&
-              nextProviderKey !== initialProfile.providerKey
+              nextProviderKey !== (profile.providerKey ?? defaultProviderKey)
             ) {
               form.setValue("apiKey", "")
             }
@@ -130,15 +112,7 @@ export function SettingsProviderProfileForm({
         />
       </FieldGroup>
 
-      {(error || modelList.error) && (
-        <FieldError>{error ?? modelList.error}</FieldError>
-      )}
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={!isFormValid || isSubmitting}>
-          {isSubmitting ? "Saving..." : submitLabel}
-        </Button>
-      </div>
-    </form>
+      {modelList.error && <FieldError>{modelList.error}</FieldError>}
+    </div>
   )
 }
