@@ -1,10 +1,9 @@
 import { ResolvedCard } from "./card-types"
-import type { ProviderProfile, ProviderProfileInput } from "./provider-profile-types"
-export type {
-  ProviderKey,
+import type {
   ProviderProfile,
   ProviderProfileInput,
 } from "./provider-profile-types"
+
 export interface CardDbAPI {
   isLoaded: () => Promise<boolean>
   lookupCard: (grpId: number) => Promise<ResolvedCard | null>
@@ -15,8 +14,6 @@ export interface AppSettings {
   developerMode: boolean
 }
 
-export type AppStoreSchema = AppSettings & ProviderStoreState
-
 export interface SettingsAPI {
   get: () => Promise<AppSettings>
   getAlwaysOnTop: () => Promise<boolean>
@@ -25,20 +22,16 @@ export interface SettingsAPI {
   setDeveloperMode: (value: boolean) => Promise<void>
 }
 
-export interface ProviderStoreState {
-  providerProfiles: Record<string, ProviderProfile>
-  selectedProviderProfileId: string | null
-}
-
 export interface ProvidersAPI {
   getProfiles: () => Promise<Record<string, ProviderProfile>>
   addProfile: (profile: ProviderProfileInput) => Promise<ProviderProfile>
-  updateProfile: (id: string, updates: ProviderProfileInput) => Promise<ProviderProfile>
+  updateProfile: (
+    id: string,
+    updates: ProviderProfileInput,
+  ) => Promise<ProviderProfile>
   removeProfile: (id: string) => Promise<void>
   getSelectedProfileId: () => Promise<string | null>
   setSelectedProfileId: (id: string) => Promise<void>
-  getApiKey: (id: string) => Promise<string | null>
-  setApiKey: (id: string, apiKey: string) => Promise<void>
 }
 
 export interface MTGAElectronAPI {

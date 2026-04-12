@@ -9,7 +9,7 @@ import {
   ProviderKey,
   ProviderProfile,
   ProviderProfileInput,
-} from "@shared/electron-types"
+} from "@shared/provider-profile-types"
 import { defaultProviderKey, providerConfig } from "@shared/provider-config"
 import { useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
@@ -25,7 +25,7 @@ function getProviderProfileFormValues(
   return {
     name: profile.name ?? "",
     providerKey: profile.providerKey ?? defaultProviderKey,
-    apiKey: "",
+    apiKey: profile.apiKey ?? "",
     selectedModel: profile.selectedModel ?? "",
   }
 }
@@ -44,15 +44,9 @@ export function SettingsProviderProfileForm({
 
   const isFirstRender = useRef(true)
 
-  const hasStoredApiKey =
-    profile.hasApiKey === true &&
-    providerKey === (profile.providerKey ?? defaultProviderKey)
-  const storedApiKeyProfileId =
-    hasStoredApiKey && apiKey.trim() === "" ? profile.id : undefined
   const modelList = useModelList({
     providerKey,
     apiKeyOverride: apiKey,
-    storedApiKeyProfileId,
   })
   const providerLabel = providerConfig[providerKey].label
 
@@ -70,7 +64,7 @@ export function SettingsProviderProfileForm({
         name: name.trim(),
         providerKey,
         selectedModel: selectedModel.trim(),
-        ...(trimmedKey ? { apiKey: trimmedKey } : {}),
+        apiKey: trimmedKey,
       }).catch((err) => {
         console.error("Failed to auto-save provider profile", err)
       })
@@ -101,7 +95,6 @@ export function SettingsProviderProfileForm({
         <ProviderProfileApiKeyField
           control={form.control}
           fieldId="settings-provider-profile-api-key"
-          hasStoredApiKey={hasStoredApiKey}
           label={`${providerLabel} API key`}
         />
 

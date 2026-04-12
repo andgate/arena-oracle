@@ -1,5 +1,5 @@
-import { AppStoreSchema } from "@shared/electron-types"
 import { IStoreService } from "./StoreService.interface"
+import { AppStoreSchema } from "./app-store-schema"
 
 export class FakeStoreService implements IStoreService {
   private values: AppStoreSchema = {

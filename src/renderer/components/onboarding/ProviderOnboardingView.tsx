@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@renderer/components/ui/card"
 import { useProviders } from "@renderer/hooks/use-providers"
-import { ProviderProfileInput } from "@shared/electron-types"
+import { ProviderProfileInput } from "@shared/provider-profile-types"
 import { useState } from "react"
 
 export function ProviderOnboardingView() {

@@ -21,10 +21,4 @@ export function registerProvidersIPC() {
   ipcMain.handle("providers:setSelectedProfileId", (_event, id) =>
     providerService.setSelectedProfileId(id),
   )
-  ipcMain.handle("providers:getApiKey", (_event, id) =>
-    providerService.getApiKey(id),
-  )
-  ipcMain.handle("providers:setApiKey", (_event, id, apiKey) =>
-    providerService.setApiKey(id, apiKey),
-  )
 }

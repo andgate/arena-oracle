@@ -7,7 +7,7 @@ export interface ProviderProfile {
   name?: string
   providerKey?: ProviderKey
   selectedModel?: string
-  hasApiKey: boolean
+  apiKey?: string
 }
 
 export interface ProviderProfileInput {
