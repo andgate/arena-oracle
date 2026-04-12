@@ -8,11 +8,12 @@ import { ProviderProfileApiKeyField } from "@renderer/features/provider-profiles
 import { ProviderProfileModelField } from "@renderer/features/provider-profiles/components/ProviderProfileModelField"
 import { ProviderProfileSelectField } from "@renderer/features/provider-profiles/components/ProviderProfileSelectField"
 import { useModelList } from "@renderer/features/provider-profiles/hooks/use-model-list"
-import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
+import { providerProfileFormSchema, ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
 import { ProviderProfileInput } from "@shared/provider-profile-types"
 import { defaultProviderKey, providerConfig } from "@shared/provider-config"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 type OnboardingProviderProfileFormProps = {
   isSubmitting?: boolean
@@ -25,6 +26,8 @@ export function OnboardingProviderProfileForm({
 }: OnboardingProviderProfileFormProps) {
   const [error, setError] = useState<string | null>(null)
   const form = useForm<ProviderProfileFormValues>({
+    resolver: zodResolver(providerProfileFormSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       providerKey: defaultProviderKey,
@@ -35,30 +38,21 @@ export function OnboardingProviderProfileForm({
 
   const providerKey = form.watch("providerKey")
   const apiKey = form.watch("apiKey")
-  const selectedModel = form.watch("selectedModel")
   const modelList = useModelList({
     providerKey,
     apiKeyOverride: apiKey,
   })
-  const isFormValid =
-    form.watch("name").trim() !== "" &&
-    apiKey.trim() !== "" &&
-    selectedModel.trim() !== ""
   const providerLabel = providerConfig[providerKey].label
 
   const handleSubmit = form.handleSubmit(async (values) => {
-    if (!isFormValid) {
-      return
-    }
-
     setError(null)
 
     try {
       await onSubmit({
-        name: values.name.trim(),
+        name: values.name,
         providerKey: values.providerKey,
-        apiKey: values.apiKey.trim(),
-        selectedModel: values.selectedModel.trim(),
+        apiKey: values.apiKey,
+        selectedModel: values.selectedModel,
       })
     } catch (nextError) {
       setError(
@@ -77,7 +71,9 @@ export function OnboardingProviderProfileForm({
         <ProviderProfileSelectField
           control={form.control}
           fieldId="onboarding-provider-profile-provider"
-          onProviderChange={() => form.setValue("selectedModel", "")}
+          onProviderChange={() =>
+            form.setValue("selectedModel", "", { shouldValidate: true })
+          }
         />
 
         <ProviderProfileApiKeyField
@@ -98,7 +94,10 @@ export function OnboardingProviderProfileForm({
       )}
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={!isFormValid || isSubmitting}>
+        <Button
+          type="submit"
+          disabled={!form.formState.isValid || isSubmitting}
+        >
           {isSubmitting ? "Saving..." : "Save provider"}
         </Button>
       </div>

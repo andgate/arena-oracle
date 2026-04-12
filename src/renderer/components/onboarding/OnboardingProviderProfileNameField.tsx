@@ -1,4 +1,8 @@
-import { Field, FieldLabel } from "@renderer/components/ui/field"
+import {
+  Field,
+  FieldError,
+  FieldLabel,
+} from "@renderer/components/ui/field"
 import { Input } from "@renderer/components/ui/input"
 import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
 import { Control, Controller } from "react-hook-form"
@@ -14,7 +18,7 @@ export function OnboardingProviderProfileNameField({
     <Controller
       name="name"
       control={control}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <Field>
           <FieldLabel htmlFor="onboarding-provider-profile-name">
             Profile name
@@ -24,6 +28,9 @@ export function OnboardingProviderProfileNameField({
             id="onboarding-provider-profile-name"
             placeholder="Enter a name"
           />
+          {fieldState.error && (
+            <FieldError>{fieldState.error.message}</FieldError>
+          )}
         </Field>
       )}
     />

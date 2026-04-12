@@ -2,12 +2,15 @@ import { Combobox } from "@renderer/components/ui/combobox"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldLabel,
 } from "@renderer/components/ui/field"
 import { Input } from "@renderer/components/ui/input"
 import { Spinner } from "@renderer/components/ui/spinner"
 import { UseModelListResult } from "@renderer/features/provider-profiles/hooks/use-model-list"
-import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
+import {
+  ProviderProfileFormValues,
+} from "@renderer/features/provider-profiles/types"
 import { Control, Controller } from "react-hook-form"
 
 type ProviderProfileModelFieldProps = {
@@ -25,7 +28,7 @@ export function ProviderProfileModelField({
     <Controller
       name="selectedModel"
       control={control}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <Field>
           <FieldLabel htmlFor={fieldId}>Model</FieldLabel>
           {!modelList.canFetchModels ? (
@@ -58,6 +61,9 @@ export function ProviderProfileModelField({
               onValueChange={field.onChange}
               placeholder="Search available models"
             />
+          )}
+          {fieldState.error && (
+            <FieldError>{fieldState.error.message}</FieldError>
           )}
         </Field>
       )}
