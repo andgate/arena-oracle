@@ -1,6 +1,6 @@
-import { AppStoreSchema } from "@shared/electron-types"
 import Store from "electron-store"
 import { injectable, singleton } from "tsyringe"
+import { AppStoreSchema } from "./app-store-schema"
 import { IStoreService } from "./StoreService.interface"
 
 const defaultStore: AppStoreSchema = {
@@ -32,7 +32,7 @@ export class StoreService implements IStoreService {
         default: defaultStore.providerProfiles,
         additionalProperties: {
           type: "object",
-          required: ["id", "hasApiKey"],
+          required: ["id"],
           additionalProperties: false,
           properties: {
             id: { type: "string" },
@@ -42,7 +42,6 @@ export class StoreService implements IStoreService {
               enum: ["groq", "openrouter"],
             },
             selectedModel: { type: "string" },
-            hasApiKey: { type: "boolean" },
           },
         },
       },

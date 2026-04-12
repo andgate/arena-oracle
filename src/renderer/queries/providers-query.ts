@@ -1,4 +1,7 @@
-import { ProviderProfile, ProviderProfileInput } from "@shared/electron-types"
+import {
+  ProviderProfile,
+  ProviderProfileInput,
+} from "@shared/provider-profile-types"
 import {
   useMutation,
   useQuery,
@@ -89,14 +92,6 @@ async function selectProviderProfile(id: string) {
   }
 }
 
-async function setProviderApiKey(id: string, apiKey: string) {
-  await window.mtgaAPI.providers.setApiKey(id, apiKey)
-
-  return {
-    id,
-  }
-}
-
 // ----------------------------------------------------------------------------
 // Cache helpers
 // ----------------------------------------------------------------------------
@@ -159,7 +154,6 @@ export function useAddProviderProfileMutation() {
             [temporaryProfileId]: {
               id: temporaryProfileId,
               ...profile,
-              hasApiKey: !!profile.apiKey?.trim(),
             },
           },
           selectedProfileId: isFirstProfile
@@ -220,7 +214,6 @@ export function useUpdateProviderProfileMutation() {
             [id]: {
               ...existingProfile,
               ...updates,
-              hasApiKey: !!updates.apiKey?.trim(),
             },
           },
           selectedProfileId: current.selectedProfileId,
@@ -308,64 +301,6 @@ export function useSelectProviderProfileMutation() {
         profiles: current?.profiles ?? {},
         selectedProfileId,
       }))
-    },
-  })
-}
-
-export function useSetProviderApiKeyMutation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({ id, apiKey }: { id: string; apiKey: string }) =>
-      setProviderApiKey(id, apiKey),
-    onMutate: async ({ id, apiKey }): Promise<ProviderMutationContext> => {
-      await queryClient.cancelQueries({ queryKey: providersQueryKey })
-
-      const previousState = getProvidersStateSnapshot(queryClient)
-
-      setProvidersState(queryClient, (current) => {
-        const existingProfile = current?.profiles[id]
-
-        if (!existingProfile) {
-          return current ?? { profiles: {}, selectedProfileId: null }
-        }
-
-        return {
-          profiles: {
-            ...current.profiles,
-            [id]: {
-              ...existingProfile,
-              hasApiKey: apiKey.trim().length > 0,
-            },
-          },
-          selectedProfileId: current.selectedProfileId,
-        }
-      })
-
-      return { previousState }
-    },
-    onError: (_error, _variables, context) => {
-      restoreProvidersState(queryClient, context)
-    },
-    onSuccess: ({ id }) => {
-      setProvidersState(queryClient, (current) => {
-        const existingProfile = current?.profiles[id]
-
-        if (!existingProfile) {
-          return current ?? { profiles: {}, selectedProfileId: null }
-        }
-
-        return {
-          profiles: {
-            ...current.profiles,
-            [id]: {
-              ...existingProfile,
-              hasApiKey: true,
-            },
-          },
-          selectedProfileId: current.selectedProfileId,
-        }
-      })
     },
   })
 }

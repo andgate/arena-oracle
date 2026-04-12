@@ -22,9 +22,6 @@ const mtgaAPI: MTGAElectronAPI = {
       ipcRenderer.invoke("providers:getSelectedProfileId"),
     setSelectedProfileId: (id: string) =>
       ipcRenderer.invoke("providers:setSelectedProfileId", id),
-    getApiKey: (id: string) => ipcRenderer.invoke("providers:getApiKey", id),
-    setApiKey: (id: string, apiKey: string) =>
-      ipcRenderer.invoke("providers:setApiKey", id, apiKey),
   },
   settings: {
     get: () => ipcRenderer.invoke("settings:get"),

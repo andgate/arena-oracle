@@ -1,10 +1,13 @@
 import {
   ProviderProfile,
   ProviderProfileInput,
-  type AppStoreSchema,
-} from "@shared/electron-types"
+} from "@shared/provider-profile-types"
 import { inject, injectable, singleton } from "tsyringe"
 import { IKeytarService } from "../keytar/KeytarService.interface"
+import {
+  AppStoreSchema,
+  StoredProviderProfile,
+} from "../store/app-store-schema"
 import { IStoreService } from "../store/StoreService.interface"
 import { IProviderService } from "./ProviderService.interface"
 
@@ -23,14 +26,21 @@ export class ProviderService implements IProviderService {
     @inject(IKeytarService) private readonly keytarService: IKeytarService,
   ) {}
 
-  getProfiles(): Record<string, ProviderProfile> {
-    return this.storeService.get("providerProfiles")
+  async getProfiles(): Promise<Record<string, ProviderProfile>> {
+    const storedProfiles = this.storeService.get("providerProfiles")
+    const hydratedProfiles = await Promise.all(
+      Object.entries(storedProfiles).map(async ([id, profile]) => [
+        id,
+        await this.hydrateProfile(profile),
+      ]),
+    )
+
+    return Object.fromEntries(hydratedProfiles)
   }
 
   async addProfile(profile: ProviderProfileInput): Promise<ProviderProfile> {
-    const nextProfile: ProviderProfile = {
+    const nextProfile: StoredProviderProfile = {
       id: crypto.randomUUID(),
-      hasApiKey: !!profile.apiKey?.trim(),
       ...defined({
         name: profile.name,
         providerKey: profile.providerKey,
@@ -47,9 +57,11 @@ export class ProviderService implements IProviderService {
       this.storeSelectedProfileId(nextProfile.id)
     }
 
-    if (profile.apiKey?.trim()) {
-      await this.setApiKey(nextProfile.id, profile.apiKey)
-    }
+    await this.keytarService.setPassword(
+      KEYTAR_SERVICE_NAME,
+      nextProfile.id,
+      profile.apiKey?.trim() ?? "",
+    )
 
     return this.getProfileById(nextProfile.id)
   }
@@ -58,14 +70,11 @@ export class ProviderService implements IProviderService {
     id: string,
     updates: ProviderProfileInput,
   ): Promise<ProviderProfile> {
-    const currentProfile = this.getProfileById(id)
-    const nextApiKey = updates.apiKey?.trim()
-
+    const currentProfile = this.getStoredProfileById(id)
     this.storeProfilesById({
       ...this.storeService.get("providerProfiles"),
       [id]: {
         ...currentProfile,
-        hasApiKey: !!nextApiKey,
         ...defined({
           name: updates.name,
           providerKey: updates.providerKey,
@@ -73,10 +82,11 @@ export class ProviderService implements IProviderService {
         }),
       },
     })
-
-    if (nextApiKey) {
-      await this.setApiKey(id, nextApiKey)
-    }
+    await this.keytarService.setPassword(
+      KEYTAR_SERVICE_NAME,
+      id,
+      updates.apiKey?.trim() ?? "",
+    )
 
     return this.getProfileById(id)
   }
@@ -103,27 +113,15 @@ export class ProviderService implements IProviderService {
   }
 
   setSelectedProfileId(id: string): void {
-    this.getProfileById(id)
+    this.getStoredProfileById(id)
     this.storeSelectedProfileId(id)
   }
 
-  async getApiKey(id: string): Promise<string | null> {
-    this.getProfileById(id)
-
-    return this.keytarService.getPassword(KEYTAR_SERVICE_NAME, id)
+  private async getProfileById(id: string): Promise<ProviderProfile> {
+    return this.hydrateProfile(this.getStoredProfileById(id))
   }
 
-  async setApiKey(id: string, apiKey: string): Promise<void> {
-    const trimmedApiKey = apiKey.trim()
-
-    if (!trimmedApiKey) {
-      throw new Error("Provider profiles require an API key.")
-    }
-
-    await this.keytarService.setPassword(KEYTAR_SERVICE_NAME, id, trimmedApiKey)
-  }
-
-  private getProfileById(id: string): ProviderProfile {
+  private getStoredProfileById(id: string): StoredProviderProfile {
     const profile = this.storeService.get("providerProfiles")[id]
 
     if (!profile) {
@@ -133,8 +131,20 @@ export class ProviderService implements IProviderService {
     return profile
   }
 
+  private async hydrateProfile(
+    profile: StoredProviderProfile,
+  ): Promise<ProviderProfile> {
+    const rawApiKey = await this.keytarService.getPassword(
+      KEYTAR_SERVICE_NAME,
+      profile.id,
+    )
+    const apiKey = rawApiKey ?? ""
+
+    return { ...profile, apiKey }
+  }
+
   private normalizeSelectedProfileId(
-    profiles: Record<string, ProviderProfile>,
+    profiles: Record<string, StoredProviderProfile>,
   ): string | null {
     const selectedProfileId = this.storeService.get("selectedProviderProfileId")
 

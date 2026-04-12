@@ -9,7 +9,7 @@ import { ProviderProfileModelField } from "@renderer/features/provider-profiles/
 import { ProviderProfileSelectField } from "@renderer/features/provider-profiles/components/ProviderProfileSelectField"
 import { useModelList } from "@renderer/features/provider-profiles/hooks/use-model-list"
 import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
-import { ProviderProfileInput } from "@shared/electron-types"
+import { ProviderProfileInput } from "@shared/provider-profile-types"
 import { defaultProviderKey, providerConfig } from "@shared/provider-config"
 import { useState } from "react"
 import { useForm } from "react-hook-form"

@@ -1,6 +1,6 @@
 import { createGroq } from "@ai-sdk/groq"
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
-import { ProviderKey, ProviderProfile } from "@shared/electron-types"
+import { ProviderKey, ProviderProfile } from "@shared/provider-profile-types"
 import { providerConfig } from "@shared/provider-config"
 import type { LanguageModel } from "ai"
 
@@ -55,7 +55,7 @@ export async function getLanguageModelForProfile(
 ): Promise<LanguageModel> {
   const providerKey = requireProfileProviderKey(profile)
   const modelId = requireProfileSelectedModel(profile)
-  const apiKey = await window.mtgaAPI.providers.getApiKey(profile.id)
+  const apiKey = profile.apiKey?.trim()
 
   if (!apiKey) {
     throw new Error(
@@ -113,7 +113,7 @@ async function fetchProviderModelsResponse(
     return fetchProviderModelsEndpoint(providerKey)
   }
 
-  const apiKey = await window.mtgaAPI.providers.getApiKey(profile.id)
+  const apiKey = profile.apiKey?.trim()
 
   if (!apiKey) {
     throw new Error(

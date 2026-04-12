@@ -3,10 +3,9 @@ import {
   useProvidersStateQuery,
   useRemoveProviderProfileMutation,
   useSelectProviderProfileMutation,
-  useSetProviderApiKeyMutation,
   useUpdateProviderProfileMutation,
 } from "@renderer/queries/providers-query"
-import { ProviderProfile, ProviderProfileInput } from "@shared/electron-types"
+import { ProviderProfile, ProviderProfileInput } from "@shared/provider-profile-types"
 import { createContext, ReactNode, useContext } from "react"
 
 interface UseProvidersResult {
@@ -22,7 +21,6 @@ interface UseProvidersResult {
   ) => Promise<ProviderProfile>
   removeProfile: (id: string) => Promise<void>
   selectProfile: (id: string) => Promise<void>
-  setApiKey: (id: string, apiKey: string) => Promise<void>
 }
 
 const ProvidersContext = createContext<UseProvidersResult | null>(null)
@@ -33,7 +31,6 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
   const updateProfileMutation = useUpdateProviderProfileMutation()
   const removeProfileMutation = useRemoveProviderProfileMutation()
   const selectProfileMutation = useSelectProviderProfileMutation()
-  const setApiKeyMutation = useSetProviderApiKeyMutation()
 
   const profiles = providersStateQuery.data?.profiles ?? {}
   const selectedProfileId = providersStateQuery.data?.selectedProfileId ?? null
@@ -59,10 +56,6 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     await removeProfileMutation.mutateAsync(id)
   }
 
-  const setApiKey = async (id: string, apiKey: string) => {
-    await setApiKeyMutation.mutateAsync({ id, apiKey })
-  }
-
   const selectedProfile = selectedProfileId
     ? (profiles[selectedProfileId] ?? null)
     : null
@@ -73,7 +66,6 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     updateProfileMutation.error ??
     removeProfileMutation.error ??
     selectProfileMutation.error ??
-    setApiKeyMutation.error ??
     null
 
   return (
@@ -88,7 +80,6 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
         updateProfile,
         removeProfile,
         selectProfile,
-        setApiKey,
       }}
     >
       {children}

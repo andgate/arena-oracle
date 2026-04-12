@@ -1,4 +1,4 @@
-import { AppStoreSchema } from "@shared/electron-types"
+import { AppStoreSchema } from "./app-store-schema"
 
 export const IStoreService = Symbol("IStoreService")
 

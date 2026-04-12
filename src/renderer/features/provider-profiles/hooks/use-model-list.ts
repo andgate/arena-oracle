@@ -1,12 +1,11 @@
 import { fetchModelsForProvider } from "@renderer/lib/ai"
 import { providerConfig } from "@shared/provider-config"
-import { ProviderKey } from "@shared/electron-types"
+import { ProviderKey } from "@shared/provider-profile-types"
 import { useEffect, useState } from "react"
 
 type UseModelListParams = {
   providerKey: ProviderKey
   apiKeyOverride?: string
-  storedApiKeyProfileId?: string
 }
 
 export type UseModelListResult = {
@@ -19,7 +18,6 @@ export type UseModelListResult = {
 export function useModelList({
   providerKey,
   apiKeyOverride = "",
-  storedApiKeyProfileId,
 }: UseModelListParams): UseModelListResult {
   const [models, setModels] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -29,8 +27,7 @@ export function useModelList({
   const trimmedApiKeyOverride = apiKeyOverride.trim()
   const canFetchModels =
     !modelListConfig.requiresApiKey ||
-    trimmedApiKeyOverride !== "" ||
-    storedApiKeyProfileId !== undefined
+    trimmedApiKeyOverride !== ""
 
   useEffect(() => {
     if (!canFetchModels) {
@@ -47,21 +44,10 @@ export function useModelList({
       setError(null)
 
       try {
-        let apiKey =
+        const apiKey =
           modelListConfig.requiresApiKey && trimmedApiKeyOverride !== ""
             ? trimmedApiKeyOverride
             : undefined
-
-        if (
-          modelListConfig.requiresApiKey &&
-          apiKey === undefined &&
-          storedApiKeyProfileId
-        ) {
-          apiKey =
-            (await window.mtgaAPI.providers.getApiKey(
-              storedApiKeyProfileId,
-            )) ?? undefined
-        }
 
         const nextModels = await fetchModelsForProvider(providerKey, apiKey)
 
@@ -97,7 +83,6 @@ export function useModelList({
     canFetchModels,
     modelListConfig.requiresApiKey,
     providerKey,
-    storedApiKeyProfileId,
     trimmedApiKeyOverride,
   ])
 
