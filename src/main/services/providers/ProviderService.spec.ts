@@ -240,7 +240,7 @@ describe("ProviderService", () => {
       expect(password).toBe("new-secret")
     })
 
-    it("sets the stored API key to an empty string when apiKey is undefined", async () => {
+    it("deletes the stored API key when apiKey is undefined", async () => {
       vi.spyOn(crypto, "randomUUID").mockReturnValue(profileId)
 
       const keytar = new FakeKeytarService()
@@ -254,7 +254,7 @@ describe("ProviderService", () => {
       const password = await keytar.getPassword(keytarServiceName, profileId)
 
       expect(profile.apiKey).toEqual("")
-      expect(password).toBe("")
+      expect(password).toBe(null)
     })
 
     it("throws when updating a missing profile", async () => {

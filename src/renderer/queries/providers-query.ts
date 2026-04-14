@@ -22,21 +22,7 @@ interface ProviderMutationContext {
   previousState: ProviderProfilesState | undefined
 }
 
-interface AddProviderProfileMutationContext extends ProviderMutationContext {
-  temporaryProfileId: string
-}
-
 const providersQueryKey = ["providers"] as const
-
-// ----------------------------------------------------------------------------
-// Query setup
-// ----------------------------------------------------------------------------
-
-// This cache strategy assumes provider state is only mutated through these
-// renderer hooks and the Electron handlers they call.
-function createTemporaryProfileId(): string {
-  return `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
 
 // ----------------------------------------------------------------------------
 // Electron API calls
@@ -138,49 +124,14 @@ export function useAddProviderProfileMutation() {
 
   return useMutation({
     mutationFn: addProviderProfile,
-    onMutate: async (profile): Promise<AddProviderProfileMutationContext> => {
-      await queryClient.cancelQueries({ queryKey: providersQueryKey })
-
-      const previousState = getProvidersStateSnapshot(queryClient)
-      const temporaryProfileId = createTemporaryProfileId()
-
-      setProvidersState(queryClient, (current) => {
-        const profiles = current?.profiles ?? {}
-        const isFirstProfile = Object.keys(profiles).length === 0
-
-        return {
-          profiles: {
-            ...profiles,
-            [temporaryProfileId]: {
-              id: temporaryProfileId,
-              ...profile,
-            },
-          },
-          selectedProfileId: isFirstProfile
-            ? temporaryProfileId
-            : (current?.selectedProfileId ?? null),
-        }
-      })
-
-      return {
-        previousState,
-        temporaryProfileId,
-      }
-    },
-    onError: (_error, _profile, context) => {
-      restoreProvidersState(queryClient, context)
-    },
-    onSuccess: ({ nextProfile, selectedProfileId }, _profile, context) => {
-      setProvidersState(queryClient, (current) => {
-        const profiles = { ...(current?.profiles ?? {}) }
-        delete profiles[context.temporaryProfileId]
-        profiles[nextProfile.id] = nextProfile
-
-        return {
-          profiles,
-          selectedProfileId,
-        }
-      })
+    onSuccess: ({ nextProfile, selectedProfileId }) => {
+      setProvidersState(queryClient, (current) => ({
+        profiles: {
+          ...(current?.profiles ?? {}),
+          [nextProfile.id]: nextProfile,
+        },
+        selectedProfileId,
+      }))
     },
   })
 }

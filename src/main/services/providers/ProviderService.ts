@@ -57,11 +57,7 @@ export class ProviderService implements IProviderService {
       this.storeSelectedProfileId(nextProfile.id)
     }
 
-    await this.keytarService.setPassword(
-      KEYTAR_SERVICE_NAME,
-      nextProfile.id,
-      profile.apiKey?.trim() ?? "",
-    )
+    await this.syncProfileApiKey(nextProfile.id, profile.apiKey)
 
     return this.getProfileById(nextProfile.id)
   }
@@ -82,11 +78,7 @@ export class ProviderService implements IProviderService {
         }),
       },
     })
-    await this.keytarService.setPassword(
-      KEYTAR_SERVICE_NAME,
-      id,
-      updates.apiKey?.trim() ?? "",
-    )
+    await this.syncProfileApiKey(id, updates.apiKey)
 
     return this.getProfileById(id)
   }
@@ -169,5 +161,23 @@ export class ProviderService implements IProviderService {
     selectedProfileId: AppStoreSchema["selectedProviderProfileId"],
   ): void {
     this.storeService.set("selectedProviderProfileId", selectedProfileId)
+  }
+
+  private async syncProfileApiKey(
+    profileId: string,
+    apiKey: string | undefined,
+  ): Promise<void> {
+    const trimmedApiKey = apiKey?.trim()
+
+    if (!trimmedApiKey) {
+      await this.keytarService.deletePassword(KEYTAR_SERVICE_NAME, profileId)
+      return
+    }
+
+    await this.keytarService.setPassword(
+      KEYTAR_SERVICE_NAME,
+      profileId,
+      trimmedApiKey,
+    )
   }
 }
