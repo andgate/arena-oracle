@@ -6,7 +6,10 @@ import { ProviderProfileApiKeyField } from "@renderer/features/provider-profiles
 import { ProviderProfileModelField } from "@renderer/features/provider-profiles/components/ProviderProfileModelField"
 import { ProviderProfileSelectField } from "@renderer/features/provider-profiles/components/ProviderProfileSelectField"
 import { useModelList } from "@renderer/features/provider-profiles/hooks/use-model-list"
-import { ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
+import {
+  providerProfileFormSchema,
+  ProviderProfileFormValues,
+} from "@renderer/features/provider-profiles/types"
 import { defaultProviderKey, providerConfig } from "@shared/provider-config"
 import { ProviderProfileInput } from "@shared/provider-profile-types"
 import { useState } from "react"
