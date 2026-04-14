@@ -1,19 +1,19 @@
+import { zodResolver } from "@hookform/resolvers/zod"
 import { OnboardingProviderProfileNameField } from "@renderer/components/onboarding/OnboardingProviderProfileNameField"
 import { Button } from "@renderer/components/ui/button"
-import {
-  FieldError,
-  FieldGroup,
-} from "@renderer/components/ui/field"
+import { FieldError, FieldGroup } from "@renderer/components/ui/field"
 import { ProviderProfileApiKeyField } from "@renderer/features/provider-profiles/components/ProviderProfileApiKeyField"
 import { ProviderProfileModelField } from "@renderer/features/provider-profiles/components/ProviderProfileModelField"
 import { ProviderProfileSelectField } from "@renderer/features/provider-profiles/components/ProviderProfileSelectField"
 import { useModelList } from "@renderer/features/provider-profiles/hooks/use-model-list"
-import { providerProfileFormSchema, ProviderProfileFormValues } from "@renderer/features/provider-profiles/types"
-import { ProviderProfileInput } from "@shared/provider-profile-types"
+import {
+  providerProfileFormSchema,
+  ProviderProfileFormValues,
+} from "@renderer/features/provider-profiles/types"
 import { defaultProviderKey, providerConfig } from "@shared/provider-config"
+import { ProviderProfileInput } from "@shared/provider-profile-types"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
 type OnboardingProviderProfileFormProps = {
   isSubmitting?: boolean
@@ -51,8 +51,8 @@ export function OnboardingProviderProfileForm({
       await onSubmit({
         name: values.name,
         providerKey: values.providerKey,
-        apiKey: values.apiKey,
         selectedModel: values.selectedModel,
+        apiKey: values.apiKey,
       })
     } catch (nextError) {
       setError(
