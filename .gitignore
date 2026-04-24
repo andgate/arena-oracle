@@ -106,3 +106,6 @@ src.txt
 # MTGA Files
 Raw_CardDatabase_*.mtga
 Player.log
+
+# AI Config Slop
+.claude

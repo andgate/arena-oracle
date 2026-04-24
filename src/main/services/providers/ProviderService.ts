@@ -1,22 +1,16 @@
 import {
+  ProviderKey,
   ProviderProfile,
   ProviderProfileInput,
 } from "@shared/provider-profile-types"
+import { isUndefined, mapAsync, omitBy } from "es-toolkit"
 import { inject, injectable, singleton } from "tsyringe"
 import { IKeytarService } from "../keytar/KeytarService.interface"
-import {
-  AppStoreSchema,
-  StoredProviderProfile,
-} from "../store/app-store-schema"
+import { StoredProviderProfile } from "../store/app-store-schema"
 import { IStoreService } from "../store/StoreService.interface"
 import { IProviderService } from "./ProviderService.interface"
 
 const KEYTAR_SERVICE_NAME = "arena-oracle.providers"
-
-const defined = <T extends object>(obj: T) =>
-  Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
-  ) as Partial<T>
 
 @injectable()
 @singleton()
@@ -28,62 +22,64 @@ export class ProviderService implements IProviderService {
 
   async getProfiles(): Promise<Record<string, ProviderProfile>> {
     const storedProfiles = this.storeService.get("providerProfiles")
-    const hydratedProfiles = await Promise.all(
-      Object.entries(storedProfiles).map(async ([id, profile]) => [
-        id,
-        await this.hydrateProfile(profile),
-      ]),
+    const profiles = await mapAsync(
+      Object.entries(storedProfiles),
+      async ([id, profile]) => {
+        const apiKey = (await this.getApiKey(id)) ?? undefined
+
+        return [id, { ...profile, apiKey }]
+      },
+      { concurrency: 5 },
     )
 
-    return Object.fromEntries(hydratedProfiles)
+    return Object.fromEntries(profiles)
   }
 
-  async addProfile(profile: ProviderProfileInput): Promise<ProviderProfile> {
+  async createProfile(initial: ProviderProfileInput = {}): Promise<string> {
+    const { apiKey, ...initialProfile } = initial
     const nextProfile: StoredProviderProfile = {
       id: crypto.randomUUID(),
-      ...defined({
-        name: profile.name,
-        providerKey: profile.providerKey,
-        selectedModel: profile.selectedModel,
-      }),
+      ...omitBy(initialProfile, isUndefined),
     }
 
-    this.storeProfilesById({
+    this.storeService.set("providerProfiles", {
       ...this.storeService.get("providerProfiles"),
       [nextProfile.id]: nextProfile,
     })
 
     if (!this.storeService.get("selectedProviderProfileId")) {
-      this.storeSelectedProfileId(nextProfile.id)
+      this.storeService.set("selectedProviderProfileId", nextProfile.id)
     }
 
-    await this.syncProfileApiKey(nextProfile.id, profile.apiKey)
+    await this.syncProfileApiKey(nextProfile.id, apiKey)
 
-    return this.getProfileById(nextProfile.id)
+    return nextProfile.id
   }
 
-  async updateProfile(
+  async setProfileName(id: string, name: string): Promise<void> {
+    this.assertProfileExists(id)
+    this.storeService.set(`providerProfiles.${id}.name`, name)
+  }
+
+  async setProfileProvider(
     id: string,
-    updates: ProviderProfileInput,
-  ): Promise<ProviderProfile> {
-    const currentProfile = this.getStoredProfileById(id)
-    this.storeProfilesById({
-      ...this.storeService.get("providerProfiles"),
-      [id]: {
-        ...currentProfile,
-        ...defined({
-          name: updates.name,
-          providerKey: updates.providerKey,
-          selectedModel: updates.selectedModel,
-        }),
-      },
-    })
-    await this.syncProfileApiKey(id, updates.apiKey)
-
-    return this.getProfileById(id)
+    providerKey: ProviderKey,
+  ): Promise<void> {
+    this.assertProfileExists(id)
+    this.storeService.set(`providerProfiles.${id}.providerKey`, providerKey)
   }
 
-  async removeProfile(id: string): Promise<void> {
+  async setProfileModel(id: string, model: string): Promise<void> {
+    this.assertProfileExists(id)
+    this.storeService.set(`providerProfiles.${id}.selectedModel`, model)
+  }
+
+  async setProfileApiKey(id: string, apiKey: string): Promise<void> {
+    this.assertProfileExists(id)
+    await this.syncProfileApiKey(id, apiKey)
+  }
+
+  async deleteProfile(id: string): Promise<void> {
     const profiles = this.storeService.get("providerProfiles")
 
     if (!profiles[id]) {
@@ -93,74 +89,40 @@ export class ProviderService implements IProviderService {
     const nextProfilesById = { ...profiles }
     delete nextProfilesById[id]
 
-    this.storeProfilesById(nextProfilesById)
+    this.storeService.set("providerProfiles", nextProfilesById)
     this.normalizeSelectedProfileId(nextProfilesById)
     await this.keytarService.deletePassword(KEYTAR_SERVICE_NAME, id)
   }
 
   getSelectedProfileId(): string | null {
-    return this.normalizeSelectedProfileId(
-      this.storeService.get("providerProfiles"),
-    )
+    return this.storeService.get("selectedProviderProfileId")
   }
 
   setSelectedProfileId(id: string): void {
-    this.getStoredProfileById(id)
-    this.storeSelectedProfileId(id)
+    this.assertProfileExists(id)
+    this.storeService.set("selectedProviderProfileId", id)
   }
 
-  private async getProfileById(id: string): Promise<ProviderProfile> {
-    return this.hydrateProfile(this.getStoredProfileById(id))
-  }
-
-  private getStoredProfileById(id: string): StoredProviderProfile {
-    const profile = this.storeService.get("providerProfiles")[id]
-
-    if (!profile) {
+  private assertProfileExists(id: string): void {
+    if (!this.storeService.get("providerProfiles")[id]) {
       throw new Error(`Provider profile "${id}" was not found.`)
     }
-
-    return profile
   }
 
-  private async hydrateProfile(
-    profile: StoredProviderProfile,
-  ): Promise<ProviderProfile> {
-    const rawApiKey = await this.keytarService.getPassword(
-      KEYTAR_SERVICE_NAME,
-      profile.id,
-    )
-    const apiKey = rawApiKey ?? ""
-
-    return { ...profile, apiKey }
+  private async getApiKey(profileId: string): Promise<string | null> {
+    return this.keytarService.getPassword(KEYTAR_SERVICE_NAME, profileId)
   }
 
   private normalizeSelectedProfileId(
     profiles: Record<string, StoredProviderProfile>,
-  ): string | null {
+  ) {
     const selectedProfileId = this.storeService.get("selectedProviderProfileId")
-
     if (selectedProfileId && profiles[selectedProfileId]) {
-      return selectedProfileId
+      return
     }
 
-    const fallbackProfileId = Object.values(profiles)[0]?.id ?? null
-
-    this.storeSelectedProfileId(fallbackProfileId)
-
-    return fallbackProfileId
-  }
-
-  private storeProfilesById(
-    profiles: AppStoreSchema["providerProfiles"],
-  ): void {
-    this.storeService.set("providerProfiles", profiles)
-  }
-
-  private storeSelectedProfileId(
-    selectedProfileId: AppStoreSchema["selectedProviderProfileId"],
-  ): void {
-    this.storeService.set("selectedProviderProfileId", selectedProfileId)
+    const fallbackProfileId = Object.keys(profiles)[0] ?? null
+    this.storeService.set("selectedProviderProfileId", fallbackProfileId)
   }
 
   private async syncProfileApiKey(

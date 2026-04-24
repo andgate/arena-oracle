@@ -6,22 +6,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@renderer/components/ui/card"
-import { useProviders } from "@renderer/hooks/use-providers"
+import { useCreateProviderProfile } from "@renderer/features/provider-profiles/queries/provider-profiles-query"
 import { ProviderProfileInput } from "@shared/provider-profile-types"
-import { useState } from "react"
 
 export function ProviderOnboardingView() {
-  const { addProfile } = useProviders()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { mutate: createProviderProfile, isPending } =
+    useCreateProviderProfile()
 
   const handleSubmit = async (values: ProviderProfileInput) => {
-    setIsSubmitting(true)
-
-    try {
-      await addProfile(values)
-    } finally {
-      setIsSubmitting(false)
-    }
+    createProviderProfile(values)
   }
 
   return (
@@ -36,7 +29,7 @@ export function ProviderOnboardingView() {
         </CardHeader>
         <CardContent>
           <OnboardingProviderProfileForm
-            isSubmitting={isSubmitting}
+            isSubmitting={isPending}
             onSubmit={handleSubmit}
           />
         </CardContent>

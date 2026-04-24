@@ -10,9 +10,4 @@ export interface ProviderProfile {
   apiKey?: string
 }
 
-export interface ProviderProfileInput {
-  name?: string
-  providerKey?: ProviderKey
-  selectedModel?: string
-  apiKey?: string
-}
+export type ProviderProfileInput = Omit<ProviderProfile, "id">
