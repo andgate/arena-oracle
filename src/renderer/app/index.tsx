@@ -4,10 +4,10 @@ import { ChatProvider } from "@renderer/components/chat/ChatProvider"
 import { ChatViewer } from "@renderer/components/chat/ChatViewer"
 import { ProviderOnboardingView } from "@renderer/components/onboarding/ProviderOnboardingView"
 import { SettingsViews } from "@renderer/components/settings/SettingsViews"
-import { ProvidersProvider, useProviders } from "@renderer/hooks/use-providers"
+import { useProviderProfilesQuery } from "@renderer/features/provider-profiles/queries/provider-profiles-query"
 import { SettingsProvider, useSettings } from "@renderer/hooks/use-settings"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { type ReactNode, useState, useEffect } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
 import "../styles/globals.css"
 
@@ -48,7 +48,7 @@ function PlaceholderView({
 }
 
 function ChatRoute() {
-  const { isLoading, profiles, selectedProfileId } = useProviders()
+  const { isLoading, data: profiles = {} } = useProviderProfilesQuery()
   const hasProfiles = Object.keys(profiles).length > 0
 
   if (isLoading) {
@@ -65,21 +65,7 @@ function ChatRoute() {
     return <ProviderOnboardingView />
   }
 
-  if (selectedProfileId === null) {
-    return (
-      <PlaceholderView
-        eyebrow="Chat"
-        title="Loading chat"
-        description="Arena Oracle is restoring your selected provider profile."
-      />
-    )
-  }
-
-  return (
-    <div className="min-h-0 flex-1">
-      <ChatViewer />
-    </div>
-  )
+  return <ChatViewer />
 }
 
 function AppContent({
@@ -134,9 +120,7 @@ function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>
-        <ProvidersProvider>
-          <ChatProvider>{children}</ChatProvider>
-        </ProvidersProvider>
+        <ChatProvider>{children}</ChatProvider>
       </SettingsProvider>
     </QueryClientProvider>
   )

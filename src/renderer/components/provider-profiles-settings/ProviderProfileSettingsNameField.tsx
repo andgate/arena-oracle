@@ -23,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@renderer/components/ui/select"
+import { useProviderProfileSettings } from "@renderer/features/provider-profiles/hooks/use-provider-profile-settings"
+import {
+  useCreateProviderProfile,
+  useDeleteProviderProfile,
+  useProviderProfileNameSetter,
+} from "@renderer/features/provider-profiles/queries/provider-profiles-query"
 import { ProviderProfile } from "@shared/provider-profile-types"
 import {
   CheckIcon,
@@ -33,134 +39,76 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
-type ProfileOption = Pick<ProviderProfile, "id" | "name">
-
-type SettingsProviderProfileNameFieldProps = {
-  editingProfileId: string | null
-  isBusy?: boolean
-  onAcceptDraftName: (name: string) => Promise<void>
-  onCreateProfile: () => Promise<ProfileOption>
-  onDeleteProfile: () => Promise<void>
-  onDiscardCreatedProfile: (
-    profileId: string,
-    restoreProfileId: string | null,
-  ) => Promise<void>
-  onSelectProfile: (profileId: string) => void
-  profileOptions: ProfileOption[]
-}
-
 type NameFieldMode = "normal" | "create" | "edit"
 
-export function SettingsProviderProfileNameField({
-  editingProfileId,
-  isBusy = false,
-  onAcceptDraftName,
-  onCreateProfile,
-  onDeleteProfile,
-  onDiscardCreatedProfile,
-  onSelectProfile,
-  profileOptions,
-}: SettingsProviderProfileNameFieldProps) {
+type ProviderProfileSettingsNameFieldProps = {
+  profiles: ProviderProfile[]
+}
+
+export function ProviderProfileSettingsNameField({
+  profiles,
+}: ProviderProfileSettingsNameFieldProps) {
+  const { editingProfileId, setEditingProfileId } = useProviderProfileSettings()
+  const createProfile = useCreateProviderProfile()
+  const deleteProfile = useDeleteProviderProfile()
+  const setName = useProviderProfileNameSetter(editingProfileId)
+
   const [mode, setMode] = useState<NameFieldMode>("normal")
-  const [draftName, setDraftName] = useState("")
-  const [previousProfileId, setPreviousProfileId] = useState<string | null>(
-    null,
-  )
-  const [createdProfileId, setCreatedProfileId] = useState<string | null>(null)
-  const [isPending, setIsPending] = useState(false)
+  const [nameInput, setNameInput] = useState("")
+  const [draftProfileId, setDraftProfileId] = useState<string | null>(null)
+  const [draftRestoreProfileId, setDraftRestoreProfileId] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
+  const isPending = createProfile.isPending || deleteProfile.isPending || setName.isPending
   const isNormalMode = mode === "normal"
-  const currentProfile = profileOptions.find(
-    (profile) => profile.id === editingProfileId,
-  )
   const canEdit = editingProfileId !== null
-  const canDelete = editingProfileId !== null
-  const canAcceptDraft = draftName.trim().length > 0
-  const isDisabled = isBusy || isPending
+  const canSave = nameInput.trim().length > 0
+  const currentProfile = profiles.find((p) => p.id === editingProfileId) ?? null
 
   const handleCreate = async () => {
-    if (isDisabled) {
-      return
-    }
-
-    setIsPending(true)
-
-    try {
-      const nextProfile = await onCreateProfile()
-      setPreviousProfileId(editingProfileId)
-      setCreatedProfileId(nextProfile.id)
-      setDraftName(nextProfile.name ?? "")
-      setMode("create")
-    } finally {
-      setIsPending(false)
-    }
+    if (isPending) return
+    const id = await createProfile.mutateAsync(undefined)
+    setDraftRestoreProfileId(editingProfileId)
+    setDraftProfileId(id)
+    setEditingProfileId(id)
+    setNameInput("")
+    setMode("create")
   }
 
-  const handleEdit = () => {
-    if (!currentProfile || isDisabled) {
-      return
-    }
-
-    setPreviousProfileId(editingProfileId)
-    setCreatedProfileId(null)
-    setDraftName(currentProfile.name ?? "")
+  const handleRename = () => {
+    if (isPending || !currentProfile) return
+    setNameInput(currentProfile.name ?? "")
     setMode("edit")
   }
 
   const handleCancel = async () => {
-    if (isDisabled) {
-      return
+    if (isPending) return
+
+    if (mode === "create" && draftProfileId !== null) {
+      await deleteProfile.mutateAsync(draftProfileId)
+      setEditingProfileId(draftRestoreProfileId)
+      setDraftProfileId(null)
+      setDraftRestoreProfileId(null)
     }
 
-    setIsPending(true)
-
-    try {
-      if (mode === "create" && createdProfileId) {
-        await onDiscardCreatedProfile(createdProfileId, previousProfileId)
-      } else if (mode === "edit" && previousProfileId) {
-        onSelectProfile(previousProfileId)
-      }
-
-      setDraftName("")
-      setCreatedProfileId(null)
-      setPreviousProfileId(null)
-      setMode("normal")
-    } finally {
-      setIsPending(false)
-    }
+    setNameInput("")
+    setMode("normal")
   }
 
   const handleAccept = async () => {
-    if (isDisabled || !canAcceptDraft) {
-      return
-    }
-
-    setIsPending(true)
-
-    try {
-      await onAcceptDraftName(draftName.trim())
-      setCreatedProfileId(null)
-      setPreviousProfileId(null)
-      setMode("normal")
-    } finally {
-      setIsPending(false)
-    }
+    if (isPending || !canSave || !editingProfileId) return
+    await setName.mutateAsync(nameInput.trim())
+    setNameInput("")
+    setDraftProfileId(null)
+    setDraftRestoreProfileId(null)
+    setMode("normal")
   }
 
   const handleDelete = async () => {
-    if (isDisabled || !canDelete) {
-      return
-    }
-
-    setIsPending(true)
-
-    try {
-      await onDeleteProfile()
-      setIsDeleteDialogOpen(false)
-    } finally {
-      setIsPending(false)
-    }
+    if (isPending || !editingProfileId) return
+    await deleteProfile.mutateAsync(editingProfileId)
+    const remaining = profiles.filter((p) => p.id !== editingProfileId)
+    setEditingProfileId(remaining[0]?.id ?? null)
   }
 
   return (
@@ -173,8 +121,8 @@ export function SettingsProviderProfileNameField({
           {isNormalMode ? (
             <Select
               value={editingProfileId ?? ""}
-              onValueChange={onSelectProfile}
-              disabled={isDisabled || profileOptions.length === 0}
+              onValueChange={setEditingProfileId}
+              disabled={isPending || profiles.length === 0}
             >
               <SelectTrigger
                 id="settings-provider-profile-name"
@@ -184,7 +132,7 @@ export function SettingsProviderProfileNameField({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {profileOptions.map((profile) => (
+                  {profiles.map((profile) => (
                     <SelectItem key={profile.id} value={profile.id}>
                       {profile.name ?? "untitled"}
                     </SelectItem>
@@ -195,10 +143,10 @@ export function SettingsProviderProfileNameField({
           ) : (
             <Input
               id="settings-provider-profile-name"
-              value={draftName}
-              onChange={(event) => setDraftName(event.target.value)}
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
               placeholder="Enter profile name"
-              disabled={isDisabled}
+              disabled={isPending}
             />
           )}
         </div>
@@ -211,7 +159,7 @@ export function SettingsProviderProfileNameField({
                 variant="outline"
                 size="icon"
                 aria-label="Create provider profile"
-                disabled={isDisabled}
+                disabled={isPending}
                 onClick={() => {
                   handleCreate().catch(console.error)
                 }}
@@ -223,8 +171,8 @@ export function SettingsProviderProfileNameField({
                 variant="outline"
                 size="icon"
                 aria-label="Rename provider profile"
-                disabled={isDisabled || !canEdit}
-                onClick={handleEdit}
+                disabled={isPending || !canEdit}
+                onClick={handleRename}
               >
                 <PencilIcon />
               </Button>
@@ -233,7 +181,7 @@ export function SettingsProviderProfileNameField({
                 variant="outline"
                 size="icon"
                 aria-label="Delete provider profile"
-                disabled={isDisabled || !canDelete}
+                disabled={isPending || !canEdit}
                 onClick={() => setIsDeleteDialogOpen(true)}
               >
                 <Trash2Icon />
@@ -246,7 +194,7 @@ export function SettingsProviderProfileNameField({
                 variant="outline"
                 size="icon"
                 aria-label="Cancel profile name changes"
-                disabled={isDisabled}
+                disabled={isPending}
                 onClick={() => {
                   handleCancel().catch(console.error)
                 }}
@@ -256,8 +204,12 @@ export function SettingsProviderProfileNameField({
               <Button
                 type="button"
                 size="icon"
-                aria-label="Save profile name"
-                disabled={isDisabled || !canAcceptDraft}
+                aria-label={
+                  mode === "create"
+                    ? "Create provider profile"
+                    : "Save profile name"
+                }
+                disabled={isPending || !canSave}
                 onClick={() => {
                   handleAccept().catch(console.error)
                 }}
@@ -268,18 +220,22 @@ export function SettingsProviderProfileNameField({
           )}
         </div>
       </div>
-      {isNormalMode && profileOptions.length === 0 && (
+
+      {isNormalMode && profiles.length === 0 && (
         <FieldDescription>
           Create a provider profile to start configuring a provider.
+        </FieldDescription>
+      )}
+      {mode === "create" && (
+        <FieldDescription>
+          This draft stays local until you accept it.
         </FieldDescription>
       )}
 
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={(open) => {
-          if (!isDisabled) {
-            setIsDeleteDialogOpen(open)
-          }
+          if (!isPending) setIsDeleteDialogOpen(open)
         }}
       >
         <AlertDialogContent size="sm">
@@ -290,10 +246,10 @@ export function SettingsProviderProfileNameField({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDisabled}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              disabled={isDisabled}
+              disabled={isPending}
               onClick={() => {
                 handleDelete().catch(console.error)
               }}

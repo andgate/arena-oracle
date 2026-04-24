@@ -1,6 +1,7 @@
-import { useProviders } from "@renderer/hooks/use-providers"
 import { getLanguageModelForProfile } from "@renderer/lib/ai"
 import { coachingSnapshot$ } from "@renderer/streams"
+import { useProviderProfilesQuery } from "@renderer/features/provider-profiles/queries/provider-profiles-query"
+import { useSelectedProviderProfileQuery } from "@renderer/features/provider-profiles/queries/selected-provider-profile-query"
 import { CoachingSnapshot } from "@shared/coaching-types"
 import { ModelMessage, streamText } from "ai"
 import {
@@ -207,7 +208,11 @@ export function useChatContext(): ChatContextValue {
 // ============================================================
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { selectedProfile } = useProviders()
+  const { data: profiles = {} } = useProviderProfilesQuery()
+  const { data: selectedProfileId } = useSelectedProviderProfileQuery()
+  const selectedProfile = selectedProfileId
+    ? (profiles[selectedProfileId] ?? null)
+    : null
   const [messages, setMessages] = useState<ChatMessage[]>([
     INITIAL_SYSTEM_MESSAGE,
   ])

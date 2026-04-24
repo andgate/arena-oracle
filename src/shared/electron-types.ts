@@ -1,5 +1,6 @@
 import { ResolvedCard } from "./card-types"
 import type {
+  ProviderKey,
   ProviderProfile,
   ProviderProfileInput,
 } from "./provider-profile-types"
@@ -24,12 +25,12 @@ export interface SettingsAPI {
 
 export interface ProvidersAPI {
   getProfiles: () => Promise<Record<string, ProviderProfile>>
-  addProfile: (profile: ProviderProfileInput) => Promise<ProviderProfile>
-  updateProfile: (
-    id: string,
-    updates: ProviderProfileInput,
-  ) => Promise<ProviderProfile>
-  removeProfile: (id: string) => Promise<void>
+  createProfile: (initial?: ProviderProfileInput) => Promise<string>
+  setProfileName: (id: string, name: string) => Promise<void>
+  setProfileProvider: (id: string, providerKey: ProviderKey) => Promise<void>
+  setProfileModel: (id: string, model: string) => Promise<void>
+  setProfileApiKey: (id: string, apiKey: string) => Promise<void>
+  deleteProfile: (id: string) => Promise<void>
   getSelectedProfileId: () => Promise<string | null>
   setSelectedProfileId: (id: string) => Promise<void>
 }

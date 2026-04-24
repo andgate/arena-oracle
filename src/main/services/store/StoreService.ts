@@ -1,5 +1,6 @@
 import Store from "electron-store"
 import { injectable, singleton } from "tsyringe"
+import type { Get, Paths } from "type-fest"
 import { AppStoreSchema } from "./app-store-schema"
 import { IStoreService } from "./StoreService.interface"
 
@@ -52,11 +53,15 @@ export class StoreService implements IStoreService {
     },
   })
 
-  get<K extends keyof AppStoreSchema>(key: K): AppStoreSchema[K] {
-    return this.store.get(key)
+  get<K extends keyof AppStoreSchema>(key: K): AppStoreSchema[K]
+  get<P extends Paths<AppStoreSchema>>(path: P): Get<AppStoreSchema, P>
+  get(path: string): unknown {
+    return this.store.get(path)
   }
 
-  set<K extends keyof AppStoreSchema>(key: K, value: AppStoreSchema[K]): void {
-    this.store.set(key, value)
+  set<K extends keyof AppStoreSchema>(key: K, value: AppStoreSchema[K]): void
+  set<P extends Paths<AppStoreSchema>>(path: P, value: Get<AppStoreSchema, P>): void
+  set(path: string, value: unknown): void {
+    this.store.set(path, value)
   }
 }

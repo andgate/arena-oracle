@@ -12,12 +12,18 @@ const mtgaAPI: MTGAElectronAPI = {
   },
   providers: {
     getProfiles: () => ipcRenderer.invoke("providers:getProfiles"),
-    addProfile: (profile) =>
-      ipcRenderer.invoke("providers:addProfile", profile),
-    updateProfile: (id, updates) =>
-      ipcRenderer.invoke("providers:updateProfile", id, updates),
-    removeProfile: (id: string) =>
-      ipcRenderer.invoke("providers:removeProfile", id),
+    createProfile: (initial) =>
+      ipcRenderer.invoke("providers:createProfile", initial),
+    setProfileName: (id, name) =>
+      ipcRenderer.invoke("providers:setProfileName", id, name),
+    setProfileProvider: (id, providerKey) =>
+      ipcRenderer.invoke("providers:setProfileProvider", id, providerKey),
+    setProfileModel: (id, model) =>
+      ipcRenderer.invoke("providers:setProfileModel", id, model),
+    setProfileApiKey: (id, apiKey) =>
+      ipcRenderer.invoke("providers:setProfileApiKey", id, apiKey),
+    deleteProfile: (id: string) =>
+      ipcRenderer.invoke("providers:deleteProfile", id),
     getSelectedProfileId: () =>
       ipcRenderer.invoke("providers:getSelectedProfileId"),
     setSelectedProfileId: (id: string) =>

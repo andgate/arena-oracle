@@ -7,12 +7,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@renderer/components/ui/alert-dialog"
-import { useProviders } from "@renderer/hooks/use-providers"
+import { useProviderProfilesQuery } from "@renderer/features/provider-profiles/queries/provider-profiles-query"
+import { useSelectedProviderProfileQuery, useSetSelectedProviderProfile } from "@renderer/features/provider-profiles/queries/selected-provider-profile-query"
 import { KeyboardEvent, useEffect, useRef, useState } from "react"
 import { useChatContext } from "./ChatProvider"
 
 export function ChatViewer() {
-  const { profiles, selectedProfileId, selectProfile } = useProviders()
+  const { data: profiles = {} } = useProviderProfilesQuery()
+  const { data: selectedProfileId } = useSelectedProviderProfileQuery()
+  const { mutate: setSelectedProfile } = useSetSelectedProviderProfile()
   const { dismissError, errorMessage, messages, isLoading, sendMessage } =
     useChatContext()
   const sortedProfiles = Object.values(profiles).sort((a, b) =>
@@ -155,9 +158,7 @@ export function ChatViewer() {
       >
         <select
           value={selectedProfileId ?? ""}
-          onChange={(e) => {
-            selectProfile(e.target.value).catch(console.error)
-          }}
+          onChange={(e) => setSelectedProfile(e.target.value)}
           style={{
             padding: "0 8px",
             background: "#1a1a1a",
