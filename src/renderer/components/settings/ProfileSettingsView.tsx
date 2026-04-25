@@ -10,7 +10,7 @@ import { ProviderProfileSettingsProvider } from "@renderer/features/provider-pro
 
 export function ProfileSettingsView() {
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardHeader>
         <div>
           <CardTitle>Providers</CardTitle>

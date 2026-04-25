@@ -19,7 +19,7 @@ export function ProviderOnboardingView() {
 
   return (
     <div className="flex h-full items-center justify-center p-6">
-      <Card className="w-full max-w-2xl border border-border/60">
+      <Card className="w-full max-w-2xl border border-border/60 overflow-visible">
         <CardHeader>
           <CardTitle>Set up your first provider</CardTitle>
           <CardDescription>
