@@ -9,7 +9,7 @@ import { ProfileSettingsView } from "./ProfileSettingsView"
 
 export function SettingsViews() {
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto p-6 flex flex-col items-center md:pt-32">
       <Tabs defaultValue="general" className="w-full max-w-lg">
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
