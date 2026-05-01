@@ -3,6 +3,7 @@ import { AppSidebar, type AppView } from "@renderer/components/app-sidebar"
 import { ChatProvider } from "@renderer/components/chat/ChatProvider"
 import { ChatViewer } from "@renderer/components/chat/ChatViewer"
 import { ProviderOnboardingView } from "@renderer/components/onboarding/ProviderOnboardingView"
+import { DebugViews } from "@renderer/components/debug/DebugViews"
 import { SettingsViews } from "@renderer/components/settings/SettingsViews"
 import { useProviderProfilesQuery } from "@renderer/features/provider-profiles/queries/provider-profiles-query"
 import { SettingsProvider, useSettings } from "@renderer/hooks/use-settings"
@@ -99,13 +100,7 @@ function AppContent({
 
   if (activeView === "settings") return <SettingsViews />
 
-  return (
-    <PlaceholderView
-      eyebrow="Debug"
-      title="Debug tools"
-      description="Debug remains hidden until developer mode is wired up."
-    />
-  )
+  return <DebugViews />
 }
 
 function getViewTitle(activeView: AppView, selectedHistoryId: string | null) {
