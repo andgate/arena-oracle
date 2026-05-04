@@ -7,21 +7,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@renderer/components/ui/alert-dialog"
-import { useProviderProfilesQuery } from "@renderer/features/provider-profiles/queries/provider-profiles-query"
-import { useSelectedProviderProfileQuery, useSetSelectedProviderProfile } from "@renderer/features/provider-profiles/queries/selected-provider-profile-query"
-import { KeyboardEvent, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useChatContext } from "./ChatProvider"
+import { ChatInputBar } from "./ChatInputBar"
 
 export function ChatViewer() {
-  const { data: profiles = {} } = useProviderProfilesQuery()
-  const { data: selectedProfileId } = useSelectedProviderProfileQuery()
-  const { mutate: setSelectedProfile } = useSetSelectedProviderProfile()
-  const { dismissError, errorMessage, messages, isLoading, sendMessage } =
-    useChatContext()
-  const sortedProfiles = Object.values(profiles).sort((a, b) =>
-    (a.name ?? "untitled").localeCompare(b.name ?? "untitled"),
-  )
-  const [input, setInput] = useState("")
+  const { dismissError, errorMessage, messages, isLoading } = useChatContext()
   const [revealedSnapshots, setRevealedSnapshots] = useState<Set<string>>(
     new Set(),
   )
@@ -30,20 +21,6 @@ export function ChatViewer() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
-
-  const handleSend = async () => {
-    const trimmed = input.trim()
-    if (!trimmed || isLoading) return
-    setInput("")
-    await sendMessage(trimmed)
-  }
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSend().catch(console.error)
-    }
-  }
 
   const toggleSnapshot = (id: string) => {
     setRevealedSnapshots((prev) => {
@@ -57,7 +34,7 @@ export function ChatViewer() {
   const visibleMessages = messages.filter((m) => m.role !== "system")
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div className="flex flex-col h-full">
       {/* Message list */}
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 8 }}>
         {visibleMessages.map((m) => {
@@ -146,69 +123,7 @@ export function ChatViewer() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div
-        style={{
-          flexShrink: 0,
-          borderTop: "1px solid #333",
-          padding: 8,
-          display: "flex",
-          gap: 8,
-        }}
-      >
-        <select
-          value={selectedProfileId ?? ""}
-          onChange={(e) => setSelectedProfile(e.target.value)}
-          style={{
-            padding: "0 8px",
-            background: "#1a1a1a",
-            border: "1px solid #333",
-            borderRadius: 4,
-            color: "#eee",
-            fontSize: 13,
-          }}
-        >
-          {sortedProfiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.name ?? "untitled"}
-            </option>
-          ))}
-        </select>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask the coach... (Enter to send, Shift+Enter for newline)"
-          rows={2}
-          style={{
-            flex: 1,
-            padding: "6px 8px",
-            background: "#1a1a1a",
-            border: "1px solid #333",
-            borderRadius: 4,
-            color: "#eee",
-            fontSize: 13,
-            resize: "none",
-          }}
-        />
-        <button
-          onClick={() => {
-            handleSend().catch(console.error)
-          }}
-          disabled={isLoading || !input.trim()}
-          style={{
-            padding: "0 16px",
-            background: isLoading || !input.trim() ? "#222" : "#1a3a2a",
-            border: "1px solid #333",
-            borderRadius: 4,
-            color: isLoading || !input.trim() ? "#555" : "#eee",
-            cursor: isLoading || !input.trim() ? "default" : "pointer",
-            fontSize: 13,
-          }}
-        >
-          Send
-        </button>
-      </div>
+      <ChatInputBar />
 
       <AlertDialog
         open={errorMessage !== null}
