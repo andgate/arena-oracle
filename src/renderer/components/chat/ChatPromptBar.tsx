@@ -19,7 +19,7 @@ import { useChatContext } from "./ChatProvider"
 const LINE_HEIGHT = 24
 const MAX_ROWS = 5
 
-export function ChatInputBar() {
+export function ChatPromptBar() {
   const { data: profiles = {} } = useProviderProfilesQuery()
   const { data: selectedProfileId } = useSelectedProviderProfileQuery()
   const { mutate: setSelectedProfile } = useSetSelectedProviderProfile()

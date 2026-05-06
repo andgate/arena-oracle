@@ -17,14 +17,14 @@ export function AppLayout({ children, sidebar, title }: AppLayoutProps) {
     <TooltipProvider>
       <SidebarProvider defaultOpen={false}>
         {sidebar}
-        <SidebarInset className="min-h-svh">
-          <header className="flex h-14 items-center gap-3 border-b border-border px-4 md:hidden">
+        <SidebarInset className="h-svh overflow-hidden">
+          <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4 md:hidden">
             <SidebarTrigger className="-ml-1" />
             <div className="min-w-0 text-sm font-medium tracking-[0.08em] text-foreground uppercase">
               {title}
             </div>
           </header>
-          <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
