@@ -1,4 +1,5 @@
 import { ScrollArea } from "@renderer/components/ui/scroll-area"
+import { Spinner } from "@renderer/components/ui/spinner"
 import { useEffect, useRef } from "react"
 import { ChatMessageItem } from "./ChatMessageItem"
 import { ChatMessage, MessageRole, useChatContext } from "./ChatProvider"
@@ -29,7 +30,10 @@ export function ChatMessageScreen() {
         })}
 
         {isLoading && (
-          <div className="text-muted-foreground text-xs py-1">Coach is thinking...</div>
+          <div className="flex items-center gap-2 text-muted-foreground text-xs py-1">
+            <Spinner className="size-3" />
+            <span>Coach is thinking...</span>
+          </div>
         )}
 
         <div ref={bottomRef} />
