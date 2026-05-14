@@ -5,6 +5,8 @@ import { registerCardDbIPC } from "./ipc/card-db-ipc"
 import { registerProvidersIPC } from "./ipc/providers-ipc"
 import { registerStreams } from "./ipc/register-streams"
 import { registerSettingsIPC } from "./ipc/settings-ipc"
+import { IAppDbService } from "./services/app-db/AppDbService.interface"
+import { MIGRATIONS } from "./services/app-db/migrations"
 import { container } from "./services/container"
 import { IStartable } from "./services/lifecycle"
 
@@ -62,6 +64,7 @@ app.on("ready", () => {
   // All subscribers (Node services + IPC bridge) are attached
   // Now it's safe to start I/O
   container.resolveAll<IStartable>(IStartable).forEach((s) => s.start())
+  container.resolve<IAppDbService>(IAppDbService).applyMigrations(MIGRATIONS)
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

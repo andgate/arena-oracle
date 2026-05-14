@@ -2,6 +2,8 @@ import "reflect-metadata"
 import { container } from "tsyringe"
 import { FileSystem } from "../utils/fs/FileSystem"
 import { IFileSystem } from "../utils/fs/FileSystem.interface"
+import { AppDbService } from "./app-db/AppDbService"
+import { IAppDbService } from "./app-db/AppDbService.interface"
 import { CardDbService } from "./card-db/CardDbService"
 import { ICardDbService } from "./card-db/CardDbService.interface"
 import { CoachingSnapshotService } from "./coaching-snapshot/CoachingSnapshotService"
@@ -29,6 +31,7 @@ import { StoreService } from "./store/StoreService"
 import { IStoreService } from "./store/StoreService.interface"
 
 // Bind interfaces to service implementations
+container.register(IAppDbService, { useToken: AppDbService })
 container.register(IFileSystem, { useToken: FileSystem })
 container.register(IPlayerLogWatchService, { useToken: PlayerLogWatchService })
 container.register(IPlayerLogParserService, {
@@ -50,6 +53,8 @@ container.register(ISettingsService, { useToken: SettingsService })
 container.register(ISqlite3Service, { useToken: Sqlite3Service })
 
 // Register startable and stoppable services
+container.register(IStartable, { useToken: AppDbService })
+container.register(IStoppable, { useToken: AppDbService })
 container.register(IStartable, { useToken: PlayerLogWatchService })
 container.register(IStoppable, { useToken: PlayerLogWatchService })
 container.register(IStoppable, { useToken: GameStateService })
