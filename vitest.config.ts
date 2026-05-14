@@ -13,6 +13,10 @@ export default defineConfig({
         "src/**/*.{test,spec}.{ts,tsx}",
         // Interface files
         "**/*.interface.ts",
+        // Pure data/type declaration files
+        "**/shared/provider-config.ts",
+        "**/shared/provider-profile-types.ts",
+        "**/app-db/migrations.ts",
         // Declaration files
         "**/*.d.ts",
         // Mock files
